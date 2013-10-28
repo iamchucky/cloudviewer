@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block body %}
+<script src="../static/js/dat.gui.min.js"></script>
+<script src="../static/js/lightgl.js"></script>
+<script src="../static/js/pointcloud.js"></script>
+
+<canvas id="canvas"></canvas>
+
+<div class="navbar navbar-inverse navbar-fixed-bottom">
+    <div class="navbar-header">
+        <a class="navbar-brand" href="#">Time</a>
+    </div>
+    <div class="navbar-nav">
+        <div style="width: 100%" data-slider-min=0 data-slider-max=100 data-slider-handle="square" id="slider"></div>
+    </div>
+</div>
+<script>
+    $(function() {
+        $("#slider").slider();
+    });
+</script>
+{% endblock %}
