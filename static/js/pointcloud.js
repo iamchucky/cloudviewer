@@ -40,18 +40,21 @@ $(function() {
     // regular shader
     var particleShader = new GL.Shader('\
         uniform float far;\
+        varying vec4 color;\
         void main() {\
             gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            gl_PointSize = max(2.0, (far / gl_Position.z));\
+            gl_PointSize = max(1.0, 0.24*(far / gl_Position.z));\
+            color = gl_Color;\
         }\
         ', '\
+        varying vec4 color;\
         void main() {\
             float a = pow(2.0*(gl_PointCoord.x-0.5), 2.0);\
             float b = pow(2.0*(gl_PointCoord.y-0.5), 2.0);\
             if (1.0-a-b < 0.0) {\
                 discard;\
             }\
-            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\
+            gl_FragColor = color;\
         }\
         ');
     // texture shader
@@ -173,13 +176,21 @@ $(function() {
         xhr.onload = function () {
             if (this.response) {
                 var floatArray = new Float32Array(this.response);
-                var buffer = gl.createBuffer();
-                buffer.length = floatArray.length;
-                buffer.spacing = 3;
-                gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
-                gl.bufferData (gl.ARRAY_BUFFER, floatArray, gl.STATIC_DRAW); 
-                var ps = new GL.Mesh({triangles:false});
-                ps.vertexBuffers['gl_Vertex'].buffer = buffer;
+                var posArray = floatArray.subarray(0, floatArray.length/2);
+                var colorArray = floatArray.subarray(floatArray.length/2, floatArray.length);
+                var posBuffer = gl.createBuffer();
+                posBuffer.length = posArray.length;
+                posBuffer.spacing = 3;
+                gl.bindBuffer (gl.ARRAY_BUFFER, posBuffer);
+                gl.bufferData (gl.ARRAY_BUFFER, posArray, gl.STATIC_DRAW); 
+                var colorBuffer = gl.createBuffer();
+                colorBuffer.length = colorArray.length;
+                colorBuffer.spacing = 3;
+                gl.bindBuffer (gl.ARRAY_BUFFER, colorBuffer);
+                gl.bufferData (gl.ARRAY_BUFFER, colorArray, gl.STATIC_DRAW);
+                var ps = new GL.Mesh({triangles:false, colors:true});
+                ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
+                ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
                 particleSystem.push(ps);
             }
         };

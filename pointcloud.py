@@ -32,8 +32,10 @@ def getPt():
 	try:
 		c = conn.cursor()
 		rows = c.execute('select x,y,z from points limit '+str(start)+','+str(num))
-		bytes = rowsToBytes(rows)
-		return Response(bytes, mimetype='application/octet-stream')
+		pos_bytes = rowsToBytes(rows)
+		rows = c.execute('select r/255.0,g/255.0,b/255.0 from points limit '+str(start)+','+str(num))
+		color_bytes = rowsToBytes(rows)
+		return Response(pos_bytes+color_bytes, mimetype='application/octet-stream')
 	finally:
 		conn.close()
 
