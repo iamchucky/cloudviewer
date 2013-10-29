@@ -164,8 +164,8 @@ $(function() {
     gl.clearColor(1.0, 1.0, 1.0, 1);
     gl.enable(gl.DEPTH_TEST);
 
-    var num = 50000;
-    for (var i = 0; i < 10; i++) {
+    var num = 100000;
+    for (var i = 0; i < 70; i++) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'api/getPt?num='+num+'&start='+(i*num), true);
         xhr.responseType = 'arraybuffer';
@@ -185,6 +185,7 @@ $(function() {
         };
         xhr.send(null);
 
+        /*
         $.getJSON('api/getPt.json?num='+num+'&start='+(num*i), function(data) {
             var centroid = [0, 0, 0];
             //var ps = new GL.Mesh({ colors: 1 });
@@ -203,6 +204,7 @@ $(function() {
             center.y = centroid[1] / data.points.length;
             center.z = centroid[2] / data.points.length;
         });
+        */
     }
 
 });
