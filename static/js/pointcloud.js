@@ -40,21 +40,18 @@ $(function() {
     // regular shader
     var particleShader = new GL.Shader('\
         uniform float far;\
-        varying vec4 color;\
         void main() {\
             gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
             gl_PointSize = max(2.0, (far / gl_Position.z));\
-            color = gl_Color;\
         }\
         ', '\
-        varying vec4 color;\
         void main() {\
             float a = pow(2.0*(gl_PointCoord.x-0.5), 2.0);\
             float b = pow(2.0*(gl_PointCoord.y-0.5), 2.0);\
             if (1.0-a-b < 0.0) {\
                 discard;\
             }\
-            gl_FragColor = color;\
+            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\
         }\
         ');
     // texture shader
@@ -167,35 +164,41 @@ $(function() {
     gl.clearColor(1.0, 1.0, 1.0, 1);
     gl.enable(gl.DEPTH_TEST);
 
-    var num = 5000;
+    var num = 50000;
     for (var i = 0; i < 10; i++) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'api/getPt?num=100&start='+(i*100), true);
+        xhr.open('GET', 'api/getPt?num='+num+'&start='+(i*num), true);
         xhr.responseType = 'arraybuffer';
         xhr.overrideMimeType('text/plain; charset=x-user-defined');
         xhr.onload = function () {
-            console.log(this.readyState);
             if (this.response) {
                 var floatArray = new Float32Array(this.response);
-                console.log(floatArray);
+                var buffer = gl.createBuffer();
+                buffer.length = floatArray.length;
+                buffer.spacing = 3;
+                gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
+                gl.bufferData (gl.ARRAY_BUFFER, floatArray, gl.STATIC_DRAW); 
+                var ps = new GL.Mesh({triangles:false});
+                ps.vertexBuffers['gl_Vertex'].buffer = buffer;
+                particleSystem.push(ps);
             }
         };
         xhr.send(null);
 
-        $.getJSON('api/getPt.json?num=5000&start='+(50000*i), function(data) {
+        $.getJSON('api/getPt.json?num='+num+'&start='+(num*i), function(data) {
             var centroid = [0, 0, 0];
-            var ps = new GL.Mesh({ colors: 1 });
+            //var ps = new GL.Mesh({ colors: 1 });
             for (var i = 0; i < data.points.length; i++) {
                 datum = data.points[i];
                 centroid[0] += datum.x;
                 centroid[1] += datum.y;
                 centroid[2] += datum.z;
-                ps.vertices.push([datum.x, datum.y, datum.z]);
-                ps.colors.push([datum.r/255.0, datum.g/255.0, datum.b/255.0, 1.0]);
-                ps.triangles.push([i, i, i]);
+            //    ps.vertices.push([datum.x, datum.y, datum.z]);
+            //    ps.colors.push([datum.r/255.0, datum.g/255.0, datum.b/255.0, 1.0]);
+            //    ps.triangles.push([i, i, i]);
             }
-            ps.compile();
-            particleSystem.push(ps);
+            //ps.compile();
+            //particleSystem.push(ps);
             center.x = centroid[0] / data.points.length;
             center.y = centroid[1] / data.points.length;
             center.z = centroid[2] / data.points.length;
