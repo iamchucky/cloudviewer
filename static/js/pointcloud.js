@@ -1,7 +1,7 @@
 $(function() {
 
     // Define parameters
-    var near = 0.1;
+    var near = 0.5;
     var far = 2500.0;
     var Parameters = function() {
         this.angleY = -45;
@@ -13,7 +13,7 @@ $(function() {
     var gui = new dat.GUI();
     gui.add(params, 'angleY', -180, 180).listen();
     gui.add(params, 'angleX', 0, 360).listen();
-    gui.add(params, 'length', 0, far).step(0.5).listen();
+    gui.add(params, 'length', 0.5, far).step(0.5).listen();
 
     // proceed with WebGL
     var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
@@ -34,21 +34,21 @@ $(function() {
     var center = new GL.Vector(0, 0, 0);
     var particleSystem = [];
     // depth map and shader
-    var depthMap = new GL.Texture(512, 512, { format: gl.RGBA });
+    var depthMap = new GL.Texture(1024, 1024, { format: gl.RGBA });
     var depthShader = new GL.Shader('\
         uniform float far;\
         varying vec4 position;\
         void main() {\
             gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            gl_PointSize = 1.5 * max(2.0, (far / gl_Position.z));\
-            position = gl_Position;\
+            gl_PointSize = max(1.0, (far / gl_Position.z))/16.0;\
+            position = gl_Vertex;\
         }\
         ', '\
         uniform float far;\
         varying vec4 position;\
         void main() {\
             float depth = position.z / far;\
-            gl_FragColor = vec4(depth * 0.5 + 0.5);\
+            gl_FragColor = vec4(position.xyz/512.0, 1.0);\
         }\
         ');
     // regular shader
@@ -57,7 +57,7 @@ $(function() {
         varying vec4 color;\
         void main() {\
             gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            gl_PointSize = max(1.0, 0.24*(far / gl_Position.z));\
+            gl_PointSize = max(1.0, (far / gl_Position.z)/16.0);\
             color = gl_Color;\
         }\
         ', '\
@@ -97,13 +97,23 @@ $(function() {
     gl.onmousemove = function(e) {
         if (e.dragging) {
             params.angleX -= e.deltaX * 0.25;
-            params.angleY = Math.max(-180, Math.min(180, params.angleY + e.deltaY * 0.25));
+            params.angleY += e.deltaY * 0.25;
+    
+            if (params.angleY > 180.0) {
+                params.angleY -= 360.0;
+            } else if (params.angleY < -180.0) {
+                params.angleY += 360.0;
+            }
         }
     };
 
     gl.onmousescroll = function (e) {
-        params.length += e.wheelDeltaY/2;
-        params.length = Math.max(0.0, params.length);
+        if (e.wheelDeltaY > 0) {
+            params.length /= 2.0;
+        } else if (e.wheelDeltaY < 0) {
+            params.length *= 2.0;
+        }
+        params.length = Math.max(0.5, params.length);
     }
 
     gl.onupdate = function(seconds) {
@@ -138,16 +148,19 @@ $(function() {
         gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
         if (pixels[0] == 255)
             return;
-        var depth = pixels[0]/255.0*far;
+        var depth = pixels[0]/255.0*128;
         var tracer = new GL.Raytracer();
         var ray = tracer.getRayForPixel(x, y);
-        //ray = ray.unit();
-        //ray = ray.multiply(depth/ray.z);
+        ray = ray.multiply(depth/ray.z);
         // need camera position
         var newCenter = tracer.eye.add(ray);
         console.log(center, tracer.eye);
-        console.log(center.subtract(tracer.eye).length(), params.length);
-        center = tracer.eye;
+        //console.log(center.subtract(tracer.eye).length(), params.length);
+        console.log(center, newCenter)
+        center.x = pixels[0]*2.0;
+        center.y = pixels[1]*2.0;
+        center.z = pixels[2]*2.0;
+        console.log(pixels)
     }
 
     var renderDepthOverlay = function() {
@@ -163,10 +176,10 @@ $(function() {
         gl.matrixMode(gl.MODELVIEW);
         gl.translate(0, 0, -params.length);
         var unit = new GL.Vector(1, 0, 0);
-        var matrix = GL.Matrix.rotate(-params.angleX, 1, 0, 0);
+        var matrix = GL.Matrix.rotate(params.angleX, 0, -1, 0);
         var rot = matrix.transformVector(unit);
         gl.rotate(params.angleX, 0, -1, 0);
-        gl.rotate(params.angleY, 1, 0, 0);
+        gl.rotate(params.angleY, -1, 0, 0);
         gl.translate(-center.x, -center.y, -center.z);
         renderScene(particleShader);
         renderDepthMap();
