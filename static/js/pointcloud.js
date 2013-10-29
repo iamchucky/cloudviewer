@@ -2,7 +2,7 @@ $(function() {
 
     // Define parameters
     var near = 0.1;
-    var far = 500.0;
+    var far = 2500.0;
     var Parameters = function() {
         this.angleY = -45;
         this.angleX = 45;
@@ -23,6 +23,13 @@ $(function() {
         e.preventDefault();
     };
     gl.canvas.addEventListener('dblclick', dblclick);
+
+    var mousescroll = function (e) {
+        if (gl.onmousescroll) gl.onmousescroll(e);
+        e.preventDefault();
+    };
+    var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
+    gl.canvas.addEventListener(mousewheelevt, mousescroll);
 
     var center = new GL.Vector(0, 0, 0);
     var particleSystem = [];
@@ -90,9 +97,14 @@ $(function() {
     gl.onmousemove = function(e) {
         if (e.dragging) {
             params.angleX -= e.deltaX * 0.25;
-            params.angleY = Math.max(-180, Math.min(180, params.angleY - e.deltaY * 0.25));
+            params.angleY = Math.max(-180, Math.min(180, params.angleY + e.deltaY * 0.25));
         }
     };
+
+    gl.onmousescroll = function (e) {
+        params.length += e.wheelDeltaY/2;
+        params.length = Math.max(0.0, params.length);
+    }
 
     gl.onupdate = function(seconds) {
         var speed = seconds * 4;
@@ -153,8 +165,8 @@ $(function() {
         var unit = new GL.Vector(1, 0, 0);
         var matrix = GL.Matrix.rotate(-params.angleX, 1, 0, 0);
         var rot = matrix.transformVector(unit);
-        gl.rotate(-params.angleX, -rot.y, rot.x, 0);
-        gl.rotate(-params.angleY, 1, 0, 0);
+        gl.rotate(params.angleX, 0, -1, 0);
+        gl.rotate(params.angleY, 1, 0, 0);
         gl.translate(-center.x, -center.y, -center.z);
         renderScene(particleShader);
         renderDepthMap();
