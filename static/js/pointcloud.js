@@ -17,6 +17,13 @@ $(function() {
 
     // proceed with WebGL
     var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
+
+    var dblclick = function (e) {
+        if (gl.ondblclick) gl.ondblclick(e);
+        e.preventDefault();
+    };
+    gl.canvas.addEventListener('dblclick', dblclick);
+
     var center = new GL.Vector(0, 0, 0);
     var particleSystem = [];
     // depth map and shader
@@ -73,7 +80,7 @@ $(function() {
         }\
         ');
 
-    gl.onmousedown = function(e) {
+    gl.ondblclick = function(e) {
         depthMap.bind();
         textureShader.draw(texturePlane);
         sampleDepthMap(e.x, e.y, gl.canvas.width, gl.canvas.height);
@@ -163,7 +170,7 @@ $(function() {
     // MAIN
     gl.fullscreen({providedCanvas: true, paddingBottom: 50, near: near, far: far, fov: 45});
     gl.animate();
-    gl.enable(gl.CULL_FACE);
+    //gl.enable(gl.CULL_FACE);
     gl.clearColor(1.0, 1.0, 1.0, 1);
     gl.enable(gl.DEPTH_TEST);
 
