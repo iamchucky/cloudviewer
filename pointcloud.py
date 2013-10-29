@@ -28,8 +28,8 @@ def rowsToBytes(rows, indices):
 
 @app.route('/api/getPt')
 def getPt():
-	start = 0 if not 'start' in request.args else int(request.args.get('start'))
-	num = 20 if not 'num' in request.args else int(request.args.get('num'))
+	start = request.args.get('start', 0, type=int)
+	num = request.args.get('num', 20, type=int)
 	conn = sqlite3.connect('times-square.db')
 	c = conn.cursor()
 	rows = c.execute('select * from points limit '+str(start)+','+str(num))
@@ -39,8 +39,8 @@ def getPt():
 
 @app.route('/api/getPtColors')
 def getPtColors():
-	start = 0 if not 'start' in request.args else int(request.args.get('start'))
-	num = 20 if not 'num' in request.args else int(request.args.get('num'))
+	start = request.args.get('start', 0, type=int)
+	num = request.args.get('num', 20, type=int)
 	conn = sqlite3.connect('times-square.db')
 	c = conn.cursor()
 	rows = c.execute('select * from points limit '+str(start)+','+str(num))
@@ -50,8 +50,8 @@ def getPtColors():
 
 @app.route('/api/getPt.json')
 def getPtJson():
-	start = 0 if not 'start' in request.args else int(request.args.get('start'))
-	num = 20 if not 'num' in request.args else int(request.args.get('num'))
+	start = request.args.get('start', 0, type=int)
+	num = request.args.get('num', 20, type=int)
 	conn = sqlite3.connect('times-square.db')
 	c = conn.cursor()
 	rows = c.execute('select * from points limit '+str(start)+','+str(num))
