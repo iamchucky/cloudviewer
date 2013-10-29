@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+
+import logging
 import sqlite3
 import math
 import msgpack
 import gzip
-import struct
+import array
 from flask import Flask, jsonify, Response, render_template, request
 app = Flask(__name__)
 
@@ -20,8 +23,8 @@ def rowsToBytes(rows, indices):
 	for row in rows:
 		for index in indices:
 			data.append(row[index])
-	bytes = struct.pack('f'*len(data), *data)
-	return bytes
+	bytes = array.array('f', data)
+	return bytes.tostring()
 
 @app.route('/api/getPt')
 def getPt():
@@ -32,7 +35,7 @@ def getPt():
 	rows = c.execute('select * from points limit '+str(start)+','+str(num))
 	bytes = rowsToBytes(rows, [1,2,3])
 	conn.close()
-	return Response(bytes, mimetype='text/xml')
+	return Response(bytes, mimetype='application/octet-stream')
 
 @app.route('/api/getPtColors')
 def getPtColors():
@@ -58,6 +61,8 @@ def getPtJson():
 @app.route('/')
 def index():
 	return render_template('index.html')
+
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 if __name__ == '__main__':
 	app.run(debug=True)

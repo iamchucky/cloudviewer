@@ -170,12 +170,15 @@ $(function() {
     var num = 5000;
     for (var i = 0; i < 10; i++) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'api/getPt?num=100&start=0', true);
-        xhr.onload = function(event) {
-            var array = xhr.response;
-            var floatArray = new Float32Array(10000);
-            floatArray.set(array);
-            console.log(floatArray);
+        xhr.open('GET', 'api/getPt?num=100&start='+(i*100), true);
+        xhr.responseType = 'arraybuffer';
+        xhr.overrideMimeType('text/plain; charset=x-user-defined');
+        xhr.onload = function () {
+            console.log(this.readyState);
+            if (this.response) {
+                var floatArray = new Float32Array(this.response);
+                console.log(floatArray);
+            }
         };
         xhr.send(null);
 
