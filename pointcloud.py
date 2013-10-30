@@ -11,6 +11,8 @@ app = Flask(__name__)
 
 fields = ['x', 'y', 'z', 'r', 'g', 'b']
 
+db = 'times-square-v2.db'
+
 def pointToJson(pt):
 	jsonPt = {}
 	for i in xrange(len(pt)):
@@ -27,7 +29,7 @@ def rowsToBytes(rows):
 def getPt():
 	start = request.args.get('start', 0, type=int)
 	num = request.args.get('num', 20, type=int)
-	conn = sqlite3.connect('times-square.db')
+	conn = sqlite3.connect(db)
 
 	try:
 		c = conn.cursor()
@@ -43,7 +45,7 @@ def getPt():
 def getPtColors():
 	start = request.args.get('start', 0, type=int)
 	num = request.args.get('num', 20, type=int)
-	conn = sqlite3.connect('times-square.db')
+	conn = sqlite3.connect(db)
 
 	try:
 		c = conn.cursor()
@@ -57,7 +59,7 @@ def getPtColors():
 def getPtJson():
 	start = request.args.get('start', 0, type=int)
 	num = request.args.get('num', 20, type=int)
-	conn = sqlite3.connect('times-square.db')
+	conn = sqlite3.connect(db)
 
 	try:
 		c = conn.cursor()

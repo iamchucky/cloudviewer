@@ -57,7 +57,7 @@ $(function() {
         varying vec4 color;\
         void main() {\
             gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            gl_PointSize = max(1.0, (far / gl_Position.z)/16.0);\
+            gl_PointSize = max(2.0, (128.0 / gl_Position.z));\
             color = gl_Color;\
         }\
         ', '\
@@ -171,12 +171,13 @@ $(function() {
     };
 
     gl.ondraw = function() {
+        gl.clearColor(18.0/255.0, 10.0/255.0, 143.0/255.0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.loadIdentity();
         gl.matrixMode(gl.MODELVIEW);
         gl.translate(0, 0, -params.length);
         var unit = new GL.Vector(1, 0, 0);
-        var matrix = GL.Matrix.rotate(params.angleX, 0, -1, 0);
+        var matrix = GL.Matrix.rotate(params.angleX, 0, 1, 0);
         var rot = matrix.transformVector(unit);
         gl.rotate(params.angleX, 0, -1, 0);
         gl.rotate(params.angleY, -1, 0, 0);
