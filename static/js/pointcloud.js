@@ -176,11 +176,8 @@ $(function() {
         gl.loadIdentity();
         gl.matrixMode(gl.MODELVIEW);
         gl.translate(0, 0, -params.length);
-        var unit = new GL.Vector(1, 0, 0);
-        var matrix = GL.Matrix.rotate(params.angleX, 0, 1, 0);
-        var rot = matrix.transformVector(unit);
+        gl.rotate(params.angleY, 1, 0, 0);
         gl.rotate(params.angleX, 0, -1, 0);
-        gl.rotate(params.angleY, -1, 0, 0);
         gl.translate(-center.x, -center.y, -center.z);
         renderScene(particleShader);
         renderDepthMap();
