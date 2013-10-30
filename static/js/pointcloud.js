@@ -176,8 +176,8 @@ $(function() {
         gl.loadIdentity();
         gl.matrixMode(gl.MODELVIEW);
         gl.translate(0, 0, -params.length);
-        gl.rotate(params.angleY, 1, 0, 0);
         gl.rotate(params.angleX, 0, -1, 0);
+        gl.rotate(params.angleY, 1, 0, 0);
         gl.translate(-center.x, -center.y, -center.z);
         renderScene(particleShader);
         renderDepthMap();
