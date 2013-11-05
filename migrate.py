@@ -2,34 +2,39 @@ import sqlite3
 import gzip
 import msgpack
 
-conn = sqlite3.connect('times-square.db')
-c = conn.cursor()
+conn = sqlite3.connect('times-square-v3.db')
 times_square = None
 
 def createDb():
 	conn.execute('create table if not exists points(' +
-			'x integer not null,' +
-			'y integer not null,' +
-			'z integer not null,' +
+			'x real not null,' +
+			'y real not null,' +
+			'z real not null,' +
 			'r integer not null,' +
 			'g integer not null,' +
-			'b integer not null)')
+			'b integer not null,' +
+			'tmin integer not null,' +
+			'tmax integer not null,' +
+			'source integer not null,' +
+			'idx integer not null)')
 	conn.commit()
 
 def loadPoints():
 	global times_square
-	with gzip.open('./static/data/times-square.pack.gz', 'rb') as f:
+	with gzip.open('times-square-v3.pack.gz', 'rb') as f:
 		times_square = msgpack.unpackb(f.read())
+		print times_square['fields']
+		print times_square['attributes'][0]
 
 def migrate():
 	global times_square
-	points = [tuple(x[:6]) for x in times_square['attributes']]
-	conn.executemany("insert into points (x,y,z,r,g,b) values (?,?,?,?,?,?)", points)
+	points = [x[:6]+x[9:] for x in times_square['attributes']]
+	conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx) values (?,?,?,?,?,?,?,?,?,?)", points)
 	conn.commit()
 
 def main():
-	createDb()
 	loadPoints()
+	createDb()
 	migrate()
 	pass
 

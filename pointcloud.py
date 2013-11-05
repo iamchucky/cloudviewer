@@ -9,9 +9,9 @@ import array
 from flask import Flask, jsonify, Response, render_template, request
 app = Flask(__name__)
 
-fields = ['x', 'y', 'z', 'r', 'g', 'b']
+fields = ['x', 'y', 'z', 'r', 'g', 'b', 'tmin', 'tmax']
 
-db = 'times-square-v2.db'
+db = 'times-square-v3.db'
 
 def pointToJson(pt):
 	jsonPt = {}
@@ -37,7 +37,26 @@ def getPt():
 		pos_bytes = rowsToBytes(rows)
 		rows = c.execute('select r/255.0,g/255.0,b/255.0 from points limit '+str(start)+','+str(num))
 		color_bytes = rowsToBytes(rows)
-		return Response(pos_bytes+color_bytes, mimetype='application/octet-stream')
+		rows = c.execute('select tmin,tmax from points limit '+str(start)+','+str(num))
+		t_bytes = rowsToBytes(rows)
+		return Response(pos_bytes+color_bytes+t_bytes, mimetype='application/octet-stream')
+	finally:
+		conn.close()
+
+@app.route('/api/getTimeRange')
+def getTimeRange():
+	conn = sqlite3.connect(db)
+	try:
+		c = conn.cursor()
+		min = c.execute('select min(tmin) from points')
+		tmin = 0
+		for row in min:
+			tmin = row[0]
+		max = c.execute('select max(tmax) from points')
+		tmax = 0
+		for row in max:
+			tmax = row[0]
+		return jsonify({'tmin':tmin, 'tmax':tmax})
 	finally:
 		conn.close()
 

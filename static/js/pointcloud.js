@@ -7,6 +7,7 @@ $(function() {
         this.angleY = -45;
         this.angleX = 45;
         this.length = 10.0;
+        this.time = 0;
     };
     var params = new Parameters();
     // define the DAT.GUI
@@ -53,12 +54,18 @@ $(function() {
         ');
     // regular shader
     var particleShader = new GL.Shader('\
+        attribute vec2 t_range;\
+        uniform float time;\
         uniform float far;\
         varying vec4 color;\
         void main() {\
-            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            gl_PointSize = max(2.0, (128.0 / gl_Position.z));\
-            color = gl_Color;\
+            if (t_range[0] <= time && t_range[1] >= time) {\
+                gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+                gl_PointSize = max(2.0, (128.0 / gl_Position.z));\
+                color = gl_Color;\
+            } else {\
+                gl_PointSize = 0.0;\
+            }\
         }\
         ', '\
         varying vec4 color;\
@@ -186,7 +193,7 @@ $(function() {
 
     var renderScene = function(shader) {
         for (var i = 0; i < particleSystem.length; i++) {
-            shader.uniforms({ far: far }).draw(particleSystem[i], gl.POINTS);
+            shader.uniforms({ far: far, time: params.time }).draw(particleSystem[i], gl.POINTS);
         }
     };
 
@@ -197,8 +204,23 @@ $(function() {
     gl.clearColor(1.0, 1.0, 1.0, 1);
     gl.enable(gl.DEPTH_TEST);
 
+    var createBuffer = function(array, spacing) {
+        var buffer = gl.createBuffer();
+        buffer.length = array.length;
+        buffer.spacing = spacing;
+        gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
+        gl.bufferData (gl.ARRAY_BUFFER, array, gl.STATIC_DRAW); 
+        return buffer;
+    }
+
+    // get the time range
+    $.getJSON('api/getTimeRange', function(data) {
+        gui.add(params, 'time', data.tmin, data.tmax);
+    });
+
+    // now get all the particles
     var num = 100000;
-    for (var i = 0; i < 70; i++) {
+    for (var i = 0; i < 1; i++) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', 'api/getPt?num='+num+'&start='+(i*num), true);
         xhr.responseType = 'arraybuffer';
@@ -206,21 +228,17 @@ $(function() {
         xhr.onload = function () {
             if (this.response) {
                 var floatArray = new Float32Array(this.response);
-                var posArray = floatArray.subarray(0, floatArray.length/2);
-                var colorArray = floatArray.subarray(floatArray.length/2, floatArray.length);
-                var posBuffer = gl.createBuffer();
-                posBuffer.length = posArray.length;
-                posBuffer.spacing = 3;
-                gl.bindBuffer (gl.ARRAY_BUFFER, posBuffer);
-                gl.bufferData (gl.ARRAY_BUFFER, posArray, gl.STATIC_DRAW); 
-                var colorBuffer = gl.createBuffer();
-                colorBuffer.length = colorArray.length;
-                colorBuffer.spacing = 3;
-                gl.bindBuffer (gl.ARRAY_BUFFER, colorBuffer);
-                gl.bufferData (gl.ARRAY_BUFFER, colorArray, gl.STATIC_DRAW);
+                var posArray = floatArray.subarray(0, 3*floatArray.length/8);
+                var colorArray = floatArray.subarray(3*floatArray.length/8, 6*floatArray.length/8);
+                var timeArray = floatArray.subarray(6*floatArray.length/8, floatArray.length);
+                var posBuffer = createBuffer(posArray, 3);
+                var colorBuffer = createBuffer(colorArray, 3);
+                var timeBuffer = createBuffer(timeArray, 2);
                 var ps = new GL.Mesh({triangles:false, colors:true});
                 ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
                 ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
+                ps.addVertexBuffer('times', 't_range');
+                ps.vertexBuffers['t_range'].buffer = timeBuffer;
                 particleSystem.push(ps);
             }
         };
