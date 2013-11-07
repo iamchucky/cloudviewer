@@ -13,6 +13,9 @@ def createDb():
 			'r integer not null,' +
 			'g integer not null,' +
 			'b integer not null,' +
+			'nx integer,' +
+			'ny integer,' +
+			'nz integer,' +
 			'tmin integer not null,' +
 			'tmax integer not null,' +
 			'source integer not null,' +

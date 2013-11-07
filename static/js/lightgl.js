@@ -1607,7 +1607,7 @@ Shader.prototype = {
             value[2], value[6], value[10], value[14],
             value[3], value[7], value[11], value[15]
           ])); break;
-          default: throw 'don\'t know how to load uniform "' + name + '" of length ' + value.length;
+          default: gl.uniform1fv(location, new Float32Array(value)); break;
         }
       } else if (isNumber(value)) {
         (this.isSampler[name] ? gl.uniform1i : gl.uniform1f).call(gl, location, value);

@@ -1,23 +1,27 @@
 $(function() {
 
+    // proceed with WebGL
+    var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
+
     // Define parameters
-    var near = 0.5;
-    var far = 2500.0;
     var Parameters = function() {
         this.angleY = -45;
         this.angleX = 45;
         this.length = 10.0;
         this.time = 0;
+        this.rotation = GL.Matrix.identity();
     };
     var params = new Parameters();
     // define the DAT.GUI
     var gui = new dat.GUI();
     gui.add(params, 'angleY', -180, 180).listen();
     gui.add(params, 'angleX', 0, 360).listen();
-    gui.add(params, 'length', 0.5, far).step(0.5).listen();
 
-    // proceed with WebGL
-    var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
+    gl.near = 0.5;
+    gl.far = 2500.0;
+    gui.add(params, 'length', 0.5, 2500.0).step(0.5).listen();
+    gui.add(gl, 'near', 0.1, 2500.0);
+    gui.add(gl, 'far', 1.0, 5000.0);
 
     var dblclick = function (e) {
         if (gl.ondblclick) gl.ondblclick(e);
@@ -55,13 +59,15 @@ $(function() {
     // regular shader
     var particleShader = new GL.Shader('\
         attribute vec2 t_range;\
+        attribute float source;\
+        uniform float sources[5];\
         uniform float time;\
         uniform float far;\
         varying vec4 color;\
         void main() {\
-            if (t_range[0] <= time && t_range[1] >= time) {\
+            if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
                 gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-                gl_PointSize = max(2.0, (128.0 / gl_Position.z));\
+                gl_PointSize = max(2.0, (512.0 / gl_Position.z));\
                 color = gl_Color;\
             } else {\
                 gl_PointSize = 0.0;\
@@ -101,10 +107,21 @@ $(function() {
         gl.ondraw()
     };
 
+    gl.rotateWorldXY = function(x, y, dx, dy) {
+        var rotateSpeed = 180.0;
+        var start = gl.unProject(x, y, 1);
+        var xDir = gl.unProject(x+10, y, 1).subtract(start).unit();
+        var yDir = gl.unProject(x, y+10, 1).subtract(start).unit();
+        var mx = GL.Matrix.rotate(dy*rotateSpeed, xDir.x, xDir.y, xDir.z); 
+        var my = GL.Matrix.rotate(-dx*rotateSpeed, yDir.x, yDir.y, yDir.z); 
+        params.rotation = params.rotation.multiply(my).multiply(mx);
+    }
+
     gl.onmousemove = function(e) {
         if (e.dragging) {
             params.angleX -= e.deltaX * 0.25;
             params.angleY += e.deltaY * 0.25;
+            gl.rotateWorldXY(e.x, e.y, e.deltaX/gl.canvas.width, e.deltaY/gl.canvas.height)
     
             if (params.angleY > 180.0) {
                 params.angleY -= 360.0;
@@ -183,8 +200,9 @@ $(function() {
         gl.loadIdentity();
         gl.matrixMode(gl.MODELVIEW);
         gl.translate(0, 0, -params.length);
-        gl.rotate(params.angleX, 0, -1, 0);
-        gl.rotate(params.angleY, 1, 0, 0);
+        gl.multMatrix(params.rotation);
+        //gl.rotate(params.angleX, 0, -1, 0);
+        //gl.rotate(params.angleY, 1, 0, 0);
         gl.translate(-center.x, -center.y, -center.z);
         renderScene(particleShader);
         renderDepthMap();
@@ -192,13 +210,17 @@ $(function() {
     };
 
     var renderScene = function(shader) {
+        var sources = [];
+        for (var k in params)
+            if (k.slice(0, 6) == 'source')
+                sources.push(params[k] == true ? 1 : 0);
         for (var i = 0; i < particleSystem.length; i++) {
-            shader.uniforms({ far: far, time: params.time }).draw(particleSystem[i], gl.POINTS);
+            shader.uniforms({ far: gl.far, time: params.time, sources: sources }).draw(particleSystem[i], gl.POINTS);
         }
     };
 
     // MAIN
-    gl.fullscreen({providedCanvas: true, paddingBottom: 50, near: near, far: far, fov: 45});
+    gl.fullscreen({providedCanvas: true, paddingBottom: 50, near: gl.near, far: gl.far, fov: 45});
     gl.animate();
     //gl.enable(gl.CULL_FACE);
     gl.clearColor(1.0, 1.0, 1.0, 1);
@@ -214,31 +236,42 @@ $(function() {
     }
 
     // get the time range
-    $.getJSON('api/getTimeRange', function(data) {
+    $.getJSON('api/getInfo', function(data) {
+        for (var source in data.sources) {
+            params['source'+source] = true
+            gui.add(params, 'source'+source);
+        }
+        params.time = (data.tmin + data.tmax) / 2;
         gui.add(params, 'time', data.tmin, data.tmax);
     });
 
     // now get all the particles
     var num = 100000;
-    for (var i = 0; i < 1; i++) {
+    for (var i = 0; i < 5; i++) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'api/getPt?num='+num+'&start='+(i*num), true);
+        xhr.open('GET', 'api/getPt?num='+num+'&start='+(1000000*i*num), true);
         xhr.responseType = 'arraybuffer';
         xhr.overrideMimeType('text/plain; charset=x-user-defined');
         xhr.onload = function () {
             if (this.response) {
                 var floatArray = new Float32Array(this.response);
-                var posArray = floatArray.subarray(0, 3*floatArray.length/8);
-                var colorArray = floatArray.subarray(3*floatArray.length/8, 6*floatArray.length/8);
-                var timeArray = floatArray.subarray(6*floatArray.length/8, floatArray.length);
+                var floats = 9;
+                var posArray = floatArray.subarray(0, 3*floatArray.length/9);
+                var colorArray = floatArray.subarray(3*floatArray.length/9, 6*floatArray.length/9);
+                var timeArray = floatArray.subarray(6*floatArray.length/9, 8*floatArray.length/9);
+                var sourceArray = floatArray.subarray(8*floatArray.length/9, floatArray.length);
+                console.log(sourceArray);
                 var posBuffer = createBuffer(posArray, 3);
                 var colorBuffer = createBuffer(colorArray, 3);
                 var timeBuffer = createBuffer(timeArray, 2);
+                var sourceBuffer = createBuffer(sourceArray, 2);
                 var ps = new GL.Mesh({triangles:false, colors:true});
                 ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
                 ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
                 ps.addVertexBuffer('times', 't_range');
                 ps.vertexBuffers['t_range'].buffer = timeBuffer;
+                ps.addVertexBuffer('sources', 'source');
+                ps.vertexBuffers['source'].buffer = sourceBuffer;
                 particleSystem.push(ps);
             }
         };

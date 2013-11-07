@@ -39,24 +39,30 @@ def getPt():
 		color_bytes = rowsToBytes(rows)
 		rows = c.execute('select tmin,tmax from points limit '+str(start)+','+str(num))
 		t_bytes = rowsToBytes(rows)
-		return Response(pos_bytes+color_bytes+t_bytes, mimetype='application/octet-stream')
+		rows = c.execute('select source from points limit '+str(start)+','+str(num))
+		sources = rowsToBytes(rows)
+		return Response(pos_bytes+color_bytes+t_bytes+sources, mimetype='application/octet-stream')
 	finally:
 		conn.close()
 
-@app.route('/api/getTimeRange')
-def getTimeRange():
+@app.route('/api/getInfo')
+def getInfo():
 	conn = sqlite3.connect(db)
 	try:
 		c = conn.cursor()
-		min = c.execute('select min(tmin) from points')
+		rows = c.execute('select min(tmin) from points')
 		tmin = 0
-		for row in min:
+		for row in rows:
 			tmin = row[0]
-		max = c.execute('select max(tmax) from points')
+		rows = c.execute('select max(tmax) from points')
 		tmax = 0
-		for row in max:
+		for row in rows:
 			tmax = row[0]
-		return jsonify({'tmin':tmin, 'tmax':tmax})
+		rows = c.execute('select distinct source from points')
+		sources = []
+		for row in rows:
+			sources.append(row)
+		return jsonify({'sources':sources, 'tmin':tmin, 'tmax':tmax})
 	finally:
 		conn.close()
 
