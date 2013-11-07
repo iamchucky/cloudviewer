@@ -10,18 +10,18 @@ $(function() {
         this.length = 10.0;
         this.time = 0;
         this.rotation = GL.Matrix.identity();
+        this.center = new GL.Vector(0, 0, 0);
+        this.near = 0.5;
+        this.far = 2500.0;
     };
     var params = new Parameters();
     // define the DAT.GUI
     var gui = new dat.GUI();
     gui.add(params, 'angleY', -180, 180).listen();
     gui.add(params, 'angleX', 0, 360).listen();
-
-    gl.near = 0.5;
-    gl.far = 2500.0;
     gui.add(params, 'length', 0.5, 2500.0).step(0.5).listen();
-    gui.add(gl, 'near', 0.1, 2500.0);
-    gui.add(gl, 'far', 1.0, 5000.0);
+    gui.add(params, 'near', 0.1, 2500.0);
+    gui.add(params, 'far', 1.0, 5000.0);
 
     var dblclick = function (e) {
         if (gl.ondblclick) gl.ondblclick(e);
@@ -36,24 +36,23 @@ $(function() {
     var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
     gl.canvas.addEventListener(mousewheelevt, mousescroll);
 
-    var center = new GL.Vector(0, 0, 0);
     var particleSystem = [];
     // depth map and shader
     var depthMap = new GL.Texture(1024, 1024, { format: gl.RGBA });
     var depthShader = new GL.Shader('\
         uniform float far;\
-        varying vec4 position;\
+        varying vec4 pos;\
         void main() {\
-            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            gl_PointSize = max(1.0, (far / gl_Position.z))/16.0;\
-            position = gl_Vertex;\
+            gl_Position = pos = gl_ModelViewProjectionMatrix * gl_Vertex;\
+            gl_PointSize = 2.0*max(2.0, (512.0 / gl_Position.z));\
         }\
         ', '\
+        uniform float near;\
         uniform float far;\
-        varying vec4 position;\
+        varying vec4 pos;\
         void main() {\
-            float depth = position.z / far;\
-            gl_FragColor = vec4(position.xyz/512.0, 1.0);\
+            float depth = pos.z;\
+            gl_FragColor = vec4(vec3((depth-near)/(far-near)), 1.0);\
         }\
         ');
     // regular shader
@@ -121,7 +120,7 @@ $(function() {
         if (e.dragging) {
             params.angleX -= e.deltaX * 0.25;
             params.angleY += e.deltaY * 0.25;
-            gl.rotateWorldXY(e.x, e.y, e.deltaX/gl.canvas.width, e.deltaY/gl.canvas.height)
+            gl.rotateWorldXY(e.x, -e.y, e.deltaX/gl.canvas.width, e.deltaY/gl.canvas.height)
     
             if (params.angleY > 180.0) {
                 params.angleY -= 360.0;
@@ -172,19 +171,19 @@ $(function() {
         gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
         if (pixels[0] == 255)
             return;
-        var depth = pixels[0]/255.0*128;
+        var depth = params.near + pixels[0]/255.0*(params.far-params.near);
+        console.log(pixels[0], depth);
         var tracer = new GL.Raytracer();
         var ray = tracer.getRayForPixel(x, y);
-        ray = ray.multiply(depth/ray.z);
-        // need camera position
+        ray = ray.multiply(depth);
         var newCenter = tracer.eye.add(ray);
-        console.log(center, tracer.eye);
+        //console.log(tracer.eye, gl.unProject(0,0,0));
         //console.log(center.subtract(tracer.eye).length(), params.length);
-        console.log(center, newCenter)
-        center.x = pixels[0]*2.0;
-        center.y = pixels[1]*2.0;
-        center.z = pixels[2]*2.0;
-        console.log(pixels)
+        //console.log(pixels, center, newCenter)
+        params.center = newCenter;
+        //params.center.x = pixels[0]*2.0;
+        //params.center.y = pixels[1]*2.0;
+        //params.center.z = pixels[2]*2.0;
     }
 
     var renderDepthOverlay = function() {
@@ -203,7 +202,7 @@ $(function() {
         gl.multMatrix(params.rotation);
         //gl.rotate(params.angleX, 0, -1, 0);
         //gl.rotate(params.angleY, 1, 0, 0);
-        gl.translate(-center.x, -center.y, -center.z);
+        gl.translate(-params.center.x, -params.center.y, -params.center.z);
         renderScene(particleShader);
         renderDepthMap();
         renderDepthOverlay();
@@ -215,12 +214,16 @@ $(function() {
             if (k.slice(0, 6) == 'source')
                 sources.push(params[k] == true ? 1 : 0);
         for (var i = 0; i < particleSystem.length; i++) {
-            shader.uniforms({ far: gl.far, time: params.time, sources: sources }).draw(particleSystem[i], gl.POINTS);
+            shader.uniforms({ near: params.near, 
+                far: params.far, 
+                time: params.time, 
+                sources: sources })
+                .draw(particleSystem[i], gl.POINTS);
         }
     };
 
     // MAIN
-    gl.fullscreen({providedCanvas: true, paddingBottom: 50, near: gl.near, far: gl.far, fov: 45});
+    gl.fullscreen({providedCanvas: true, paddingBottom: 50, near: params.near, far: params.far, fov: 45});
     gl.animate();
     //gl.enable(gl.CULL_FACE);
     gl.clearColor(1.0, 1.0, 1.0, 1);
@@ -276,27 +279,6 @@ $(function() {
             }
         };
         xhr.send(null);
-
-        /*
-        $.getJSON('api/getPt.json?num='+num+'&start='+(num*i), function(data) {
-            var centroid = [0, 0, 0];
-            //var ps = new GL.Mesh({ colors: 1 });
-            for (var i = 0; i < data.points.length; i++) {
-                datum = data.points[i];
-                centroid[0] += datum.x;
-                centroid[1] += datum.y;
-                centroid[2] += datum.z;
-            //    ps.vertices.push([datum.x, datum.y, datum.z]);
-            //    ps.colors.push([datum.r/255.0, datum.g/255.0, datum.b/255.0, 1.0]);
-            //    ps.triangles.push([i, i, i]);
-            }
-            //ps.compile();
-            //particleSystem.push(ps);
-            center.x = centroid[0] / data.points.length;
-            center.y = centroid[1] / data.points.length;
-            center.z = centroid[2] / data.points.length;
-        });
-        */
     }
 
 });
