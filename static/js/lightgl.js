@@ -446,8 +446,11 @@ function addOtherMethods() {
       if (options.camera || !('camera' in options)) {
         gl.matrixMode(gl.PROJECTION);
         gl.loadIdentity();
-        gl.perspective(options.fov || 45, gl.canvas.width / gl.canvas.height,
-          options.near || 0.1, options.far || 1000);
+        gl.fov = options.fov || 45;
+        gl.near = options.near || 0.1;
+        gl.far = options.far || 1000;
+        gl.perspective(gl.fov, gl.canvas.width / gl.canvas.height,
+          gl.near, gl.far);
         gl.matrixMode(gl.MODELVIEW);
       }
       if (gl.ondraw) gl.ondraw();
@@ -455,6 +458,18 @@ function addOtherMethods() {
     on(window, 'resize', resize);
     resize();
   };
+
+  gl.setNearFar = function(near, far) {
+    gl.fov = gl.fov || 45;
+    gl.near = near || gl.near || 0.1;
+    gl.far = far || gl.far || 1000;
+    gl.matrixMode(gl.PROJECTION);
+    gl.loadIdentity();
+    gl.perspective(gl.fov, gl.canvas.width / gl.canvas.height,
+        gl.near, gl.far);
+    gl.matrixMode(gl.MODELVIEW);
+    if (gl.ondraw) gl.ondraw();
+  }
 }
 
 // A value to bitwise-or with new enums to make them distinguishable from the

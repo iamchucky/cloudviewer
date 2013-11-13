@@ -20,8 +20,12 @@ $(function() {
     gui.add(params, 'angleY', -180, 180).listen();
     gui.add(params, 'angleX', 0, 360).listen();
     gui.add(params, 'length', 0.5, 2500.0).step(0.5).listen();
-    gui.add(params, 'near', 0.1, 2500.0);
-    gui.add(params, 'far', 1.0, 5000.0);
+    gui.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
+        gl.setNearFar(params.near, params.far);
+    });
+    gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
+        gl.setNearFar(params.near, params.far);
+    });
 
     var dblclick = function (e) {
         if (gl.ondblclick) gl.ondblclick(e);
@@ -252,7 +256,7 @@ $(function() {
     var num = 100000;
     for (var i = 0; i < 5; i++) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'api/getPt?num='+num+'&start='+(1000000*i*num), true);
+        xhr.open('GET', 'api/getPt?num='+num+'&start='+(1000000*i), true);
         xhr.responseType = 'arraybuffer';
         xhr.overrideMimeType('text/plain; charset=x-user-defined');
         xhr.onload = function () {
@@ -267,7 +271,7 @@ $(function() {
                 var posBuffer = createBuffer(posArray, 3);
                 var colorBuffer = createBuffer(colorArray, 3);
                 var timeBuffer = createBuffer(timeArray, 2);
-                var sourceBuffer = createBuffer(sourceArray, 2);
+                var sourceBuffer = createBuffer(sourceArray, 1);
                 var ps = new GL.Mesh({triangles:false, colors:true});
                 ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
                 ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
