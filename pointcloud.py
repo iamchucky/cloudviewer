@@ -98,6 +98,10 @@ def getPtJson():
 def index():
 	return render_template('index.html')
 
+@app.route('/camera')
+def cameraTest():
+	return render_template('camera.html')
+
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 if __name__ == '__main__':
