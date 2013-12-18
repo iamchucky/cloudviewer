@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 fields = ['x', 'y', 'z', 'r', 'g', 'b', 'tmin', 'tmax']
 
-db = 'times-square-v3.db'
+db = 'times-square-v5.db'
 
 def pointToJson(pt):
 	jsonPt = {}

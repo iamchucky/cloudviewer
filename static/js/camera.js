@@ -41,3 +41,13 @@ GL.Mesh.camera = function(gl, pos, fov, lookat, up, options) {
     mesh.compile();
     return mesh;
 };
+
+GL.Mesh.bundlerCamera = function(gl, f, k1, k2, R, t, options) {
+    var pos, fov, lookat, up;
+    var Rt = R.transpose();
+    pos = Rt.transformPoint(t).multiply(-1);
+    lookat = Rt.transformPoint(new GL.Vector(0, 0, -1));
+    up = Rt.transformPoint(new GL.Vector(0, 1, 0));
+    fov = 30;
+    return new GL.Mesh.camera(gl, pos, fov, lookat, up, options);
+};

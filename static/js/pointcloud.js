@@ -9,6 +9,8 @@ $(function() {
         this.angleX = 45;
         this.length = 10.0;
         this.time = 0;
+        this.cameraTime = 0;
+        this.cameraWindow = 0;
         this.rotation = GL.Matrix.identity();
         this.center = new GL.Vector(0, 0, 0);
         this.near = 0.5;
@@ -44,18 +46,28 @@ $(function() {
     // depth map and shader
     var depthMap = new GL.Texture(1024, 1024, { format: gl.RGBA });
     var depthShader = new GL.Shader('\
+        attribute vec2 t_range;\
+        attribute float source;\
+        uniform float sources[5];\
+        uniform float time;\
         uniform float far;\
-        varying vec4 pos;\
+        uniform float near;\
+        varying float depth;\
         void main() {\
-            gl_Position = pos = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            gl_PointSize = 2.0*max(2.0, (512.0 / gl_Position.z));\
+            if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
+                gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+                depth = gl_Position.z;\
+                vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
+                gl_PointSize = 1.5*min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
+            } else {\
+                gl_PointSize = 0.0;\
+            }\
         }\
         ', '\
         uniform float near;\
         uniform float far;\
-        varying vec4 pos;\
+        varying float depth;\
         void main() {\
-            float depth = pos.z;\
             gl_FragColor = vec4(vec3((depth-near)/(far-near)), 1.0);\
         }\
         ');
@@ -66,11 +78,13 @@ $(function() {
         uniform float sources[5];\
         uniform float time;\
         uniform float far;\
+        uniform float near;\
         varying vec4 color;\
         void main() {\
             if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
                 gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-                gl_PointSize = max(2.0, (512.0 / gl_Position.z));\
+                vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
+                gl_PointSize = min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
                 color = gl_Color;\
             } else {\
                 gl_PointSize = 0.0;\
@@ -176,18 +190,11 @@ $(function() {
         if (pixels[0] == 255)
             return;
         var depth = params.near + pixels[0]/255.0*(params.far-params.near);
-        console.log(pixels[0], depth);
         var tracer = new GL.Raytracer();
         var ray = tracer.getRayForPixel(x, y);
         ray = ray.multiply(depth);
         var newCenter = tracer.eye.add(ray);
-        //console.log(tracer.eye, gl.unProject(0,0,0));
-        //console.log(center.subtract(tracer.eye).length(), params.length);
-        //console.log(pixels, center, newCenter)
         params.center = newCenter;
-        //params.center.x = pixels[0]*2.0;
-        //params.center.y = pixels[1]*2.0;
-        //params.center.z = pixels[2]*2.0;
     }
 
     var renderDepthOverlay = function() {
@@ -227,7 +234,7 @@ $(function() {
     };
 
     // MAIN
-    gl.fullscreen({providedCanvas: true, paddingBottom: 50, near: params.near, far: params.far, fov: 45});
+    gl.fullscreen({providedCanvas: true, near: params.near, far: params.far, fov: 45});
     gl.animate();
     //gl.enable(gl.CULL_FACE);
     gl.clearColor(1.0, 1.0, 1.0, 1);
@@ -249,7 +256,11 @@ $(function() {
             gui.add(params, 'source'+source);
         }
         params.time = (data.tmin + data.tmax) / 2;
+        params.startTime = params.time;
+        params.windowSize = (params.time - data.tmin)/4;
         gui.add(params, 'time', data.tmin, data.tmax);
+        gui.add(params, 'cameraTime', data.tmin, data.tmax);
+        gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
     });
 
     // now get all the particles
@@ -267,7 +278,6 @@ $(function() {
                 var colorArray = floatArray.subarray(3*floatArray.length/9, 6*floatArray.length/9);
                 var timeArray = floatArray.subarray(6*floatArray.length/9, 8*floatArray.length/9);
                 var sourceArray = floatArray.subarray(8*floatArray.length/9, floatArray.length);
-                console.log(sourceArray);
                 var posBuffer = createBuffer(posArray, 3);
                 var colorBuffer = createBuffer(colorArray, 3);
                 var timeBuffer = createBuffer(timeArray, 2);

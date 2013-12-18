@@ -2,7 +2,7 @@ import sqlite3
 import gzip
 import msgpack
 
-conn = sqlite3.connect('times-square-v3.db')
+conn = sqlite3.connect('times-square-v5.db')
 times_square = None
 
 def createDb():
@@ -24,14 +24,13 @@ def createDb():
 
 def loadPoints():
 	global times_square
-	with gzip.open('times-square-v3.pack.gz', 'rb') as f:
+	with gzip.open('times-square-v5.gz', 'rb') as f:
 		times_square = msgpack.unpackb(f.read())
-		print times_square['fields']
-		print times_square['attributes'][0]
+		print times_square['points']['fields']
 
 def migrate():
 	global times_square
-	points = [x[:6]+x[9:] for x in times_square['attributes']]
+	points = [x[:6]+x[9:] for x in times_square['points']['attributes']]
 	conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx) values (?,?,?,?,?,?,?,?,?,?)", points)
 	conn.commit()
 
