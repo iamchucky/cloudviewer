@@ -9,21 +9,42 @@ import array
 from flask import Flask, jsonify, Response, render_template, request
 app = Flask(__name__)
 
-fields = ['x', 'y', 'z', 'r', 'g', 'b', 'tmin', 'tmax']
+pointsFields = ['x','y','z','r','g','b','tmin','tmax']
+camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3']
 
-db = 'times-square-v5.db'
+db = 'times-square-v6.db'
 
 def pointToJson(pt):
 	jsonPt = {}
 	for i in xrange(len(pt)):
 		val = pt[i] if not math.isnan(pt[i]) else None
-		jsonPt[fields[i]] = val 
+		jsonPt[pointsFields[i]] = val 
 	return jsonPt
+
+def cameraToJson(camera):
+	jsonCamera = {}
+	for i in xrange(len(camera)):
+		val = camera[i] if not math.isnan(camera[i]) else None
+		jsonCamera[camerasFields[i]] = val
+	return jsonCamera
 
 def rowsToBytes(rows):
 	data = [col for cols in rows for col in cols]
 	bytes = array.array('f', data)
 	return bytes.tostring()
+
+@app.route('/api/getCamera')
+def getCamera():
+	start = request.args.get('start', 0, type=int)
+	num = request.args.get('num', 20, type=int)
+	conn = sqlite3.connect(db)
+	try:
+		c = conn.cursor()
+		rows = c.execute('select '+','.join(camerasFields)+' from cameras limit '+str(start)+','+str(num))
+		cameras = [cameraToJson(row) for row in rows]
+		return jsonify({'cameras':cameras})
+	finally:
+		conn.close()
 
 @app.route('/api/getPt')
 def getPt():
@@ -88,7 +109,7 @@ def getPtJson():
 
 	try:
 		c = conn.cursor()
-		rows = c.execute('select '+','.join(fields)+' from points limit '+str(start)+','+str(num))
+		rows = c.execute('select '+','.join(pointsFields)+' from points limit '+str(start)+','+str(num))
 		pts = [pointToJson(row) for row in rows]
 		return jsonify({'points':pts})
 	finally:

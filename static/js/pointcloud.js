@@ -43,12 +43,13 @@ $(function() {
     gl.canvas.addEventListener(mousewheelevt, mousescroll);
 
     var particleSystem = [];
+    var cameras = [];
     // depth map and shader
     var depthMap = new GL.Texture(1024, 1024, { format: gl.RGBA });
     var depthShader = new GL.Shader('\
         attribute vec2 t_range;\
         attribute float source;\
-        uniform float sources[5];\
+        uniform float sources[10];\
         uniform float time;\
         uniform float far;\
         uniform float near;\
@@ -71,11 +72,21 @@ $(function() {
             gl_FragColor = vec4(vec3((depth-near)/(far-near)), 1.0);\
         }\
         ');
+    // boring camera shader
+    var cameraShader = new GL.Shader('\
+        void main() {\
+            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+        }\
+        ', '\
+        void main() {\
+            gl_FragColor = vec4(0.5, 0.25, 0.5, 1.0);\
+        }\
+        ');
     // regular shader
     var particleShader = new GL.Shader('\
         attribute vec2 t_range;\
         attribute float source;\
-        uniform float sources[5];\
+        uniform float sources[10];\
         uniform float time;\
         uniform float far;\
         uniform float near;\
@@ -99,6 +110,21 @@ $(function() {
                 discard;\
             }\
             gl_FragColor = color;\
+        }\
+        ');
+    var cameraDepthShader = new GL.Shader('\
+        attribute float cameraId;\
+        varying float fid;\
+        void main() {\
+            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+            vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
+            gl_PointSize = min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
+            fid = cameraId;\
+        }\
+        ', '\
+        varying float fid;\
+        void main() {\
+            int id = int(fid);\
         }\
         ');
     // texture shader
@@ -139,7 +165,7 @@ $(function() {
             params.angleX -= e.deltaX * 0.25;
             params.angleY += e.deltaY * 0.25;
             gl.rotateWorldXY(e.x, -e.y, e.deltaX/gl.canvas.width, e.deltaY/gl.canvas.height)
-    
+
             if (params.angleY > 180.0) {
                 params.angleY -= 360.0;
             } else if (params.angleY < -180.0) {
@@ -211,25 +237,31 @@ $(function() {
         gl.matrixMode(gl.MODELVIEW);
         gl.translate(0, 0, -params.length);
         gl.multMatrix(params.rotation);
-        //gl.rotate(params.angleX, 0, -1, 0);
-        //gl.rotate(params.angleY, 1, 0, 0);
         gl.translate(-params.center.x, -params.center.y, -params.center.z);
         renderScene(particleShader);
+        renderCameras();
         renderDepthMap();
         renderDepthOverlay();
     };
 
     var renderScene = function(shader) {
         var sources = [];
-        for (var k in params)
+        for (var k in params) {
             if (k.slice(0, 6) == 'source')
                 sources.push(params[k] == true ? 1 : 0);
+        }
         for (var i = 0; i < particleSystem.length; i++) {
             shader.uniforms({ near: params.near, 
                 far: params.far, 
                 time: params.time, 
                 sources: sources })
-                .draw(particleSystem[i], gl.POINTS);
+            .draw(particleSystem[i], gl.POINTS);
+        }
+    };
+
+    var renderCameras = function() {
+        for (var i = 0; i < cameras.length; i++) {
+            cameraShader.draw(cameras[i], gl.LINES); 
         }
     };
 
@@ -263,6 +295,13 @@ $(function() {
         gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
     });
 
+    // now get all the cameras
+    var camNum = 100;
+    for (var i = 0; i < 5; i++) {
+        $.getJSON('api/getCamera?num='+camNum+'&start='+(10000*i), function(data) {
+            cameras.push(GL.Mesh.bundlerCameras(data['cameras']));
+        });
+    }
     // now get all the particles
     var num = 100000;
     for (var i = 0; i < 5; i++) {

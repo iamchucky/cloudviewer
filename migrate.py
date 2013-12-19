@@ -2,7 +2,7 @@ import sqlite3
 import gzip
 import msgpack
 
-conn = sqlite3.connect('times-square-v5.db')
+conn = sqlite3.connect('times-square-v6.db')
 times_square = None
 
 def createDb():
@@ -20,25 +20,41 @@ def createDb():
 			'tmax integer not null,' +
 			'source integer not null,' +
 			'idx integer not null)')
+	conn.execute('create table if not exists cameras(' +
+			'f real not null,' +
+			'k1 real not null,' +
+			'k2 real not null,' +
+			'R11 real not null,' +
+			'R12 real not null,' +
+			'R13 real not null,' +
+			'R21 real not null,' +
+			'R22 real not null,' +
+			'R23 real not null,' +
+			'R31 real not null,' +
+			'R32 real not null,' +
+			'R33 real not null,' +
+			't1 real not null,' +
+			't2 real not null,' +
+			't3 real not null)')
 	conn.commit()
 
 def loadPoints():
 	global times_square
-	with gzip.open('times-square-v5.gz', 'rb') as f:
+	with gzip.open('times-square-v6.gz', 'rb') as f:
 		times_square = msgpack.unpackb(f.read())
-		print times_square['points']['fields']
 
 def migrate():
 	global times_square
 	points = [x[:6]+x[9:] for x in times_square['points']['attributes']]
 	conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx) values (?,?,?,?,?,?,?,?,?,?)", points)
+	cameras = times_square['cameras']['attributes']
+	conn.executemany("insert into cameras (f,k1,k2,R11,R12,R13,R21,R22,R23,R31,R32,R33,t1,t2,t3) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", cameras)
 	conn.commit()
 
 def main():
 	loadPoints()
 	createDb()
 	migrate()
-	pass
 
 if __name__ == '__main__':
 	main()
