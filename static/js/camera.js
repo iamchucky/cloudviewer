@@ -1,21 +1,20 @@
-var addCameraToMesh = function(mesh, pos, fov, lookat, up) {
-    var w = 512, h = 512;
-    var viewport = [0, 0, w, h];
-    var projection = GL.Matrix.perspective(fov, 1, 0.25, 1);
+var addCameraToMesh = function(mesh, pos, fov, aspect, lookat, up) {
+    var projection = GL.Matrix.perspective(fov, 1.0/aspect, 0.25, 1);
     var modelView = GL.Matrix.lookAt(pos.x, pos.y, pos.z, 
             lookat.x, lookat.y, lookat.z, 
             up.x, up.y, up.z);
 
+    var w = 1, h = 1;
+    var viewport = [0, 0, w, h];
     var eye = modelView.inverse().transformPoint(new GL.Vector());
+    var unprojectMatrix = GL.Matrix.inverse(GL.Matrix.multiply(projection, modelView));
     var unproject = function(x, y, z) {
         var point = new GL.Vector(
                 (x - viewport[0]) / viewport[2] * 2 - 1,
                 (y - viewport[1]) / viewport[3] * 2 - 1,
-                z * 2 - 1
+                z*2 - 1
                 );
-        var tempMatrix = new GL.Matrix();
-        var resultMatrix = new GL.Matrix();
-        return GL.Matrix.inverse(GL.Matrix.multiply(projection, modelView, tempMatrix), resultMatrix).transformPoint(point);
+        return unprojectMatrix.transformPoint(point);
     };
     var corners = [unproject(0, 0, 0),
         unproject(w, 0, 0),
@@ -50,12 +49,12 @@ var addCameraToMesh = function(mesh, pos, fov, lookat, up) {
     mesh.lines = mesh.lines.concat(lines);
 };
 
-GL.Mesh.camera = function(pos, fov, lookat, up, options) {
+GL.Mesh.camera = function(pos, fov, aspect, lookat, up, options) {
     options = options || {};
     options['triangles'] = false;
     options['lines'] = true;
     var mesh = new GL.Mesh(options);
-    addCameraToMesh(mesh, pos, fov, lookat, up);
+    addCameraToMesh(mesh, pos, fov, aspect, lookat, up);
     mesh.compile();
     return mesh;
 };
@@ -77,14 +76,13 @@ GL.Mesh.bundlerCameras = function(camerasJson, options) {
         pos = Rt.transformPoint(t).multiply(-1);
         lookat = Rt.transformPoint(new GL.Vector(0, 0, -1));
         up = Rt.transformPoint(new GL.Vector(0, 1, 0));
-        fov = 20;
-        addCameraToMesh(mesh, pos, fov, lookat, up);
+        addCameraToMesh(mesh, pos, c.fovy, c.aspect, lookat, up);
     }
     mesh.compile();
     return mesh;
 };
 
-GL.Mesh.bundlerCamera = function(f, k1, k2, R, t, options) {
+GL.Mesh.bundlerCamera = function(f, k1, k2, aspect, R, t, options) {
     options = options || {};
     options['triangles'] = false;
     options['lines'] = true;
@@ -95,7 +93,7 @@ GL.Mesh.bundlerCamera = function(f, k1, k2, R, t, options) {
     lookat = Rt.transformPoint(new GL.Vector(0, 0, -1));
     up = Rt.transformPoint(new GL.Vector(0, 1, 0));
     fov = 20;
-    addCameraToMesh(mesh, pos, fov, lookat, up);
+    addCameraToMesh(mesh, pos, fov, aspect, lookat, up);
     mesh.compile();
     return mesh;
 };

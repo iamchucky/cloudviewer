@@ -10,9 +10,9 @@ from flask import Flask, jsonify, Response, render_template, request
 app = Flask(__name__)
 
 pointsFields = ['x','y','z','r','g','b','tmin','tmax']
-camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3']
+camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
-db = 'times-square-v6.db'
+db = 'times-square-v7.db'
 
 def pointToJson(pt):
 	jsonPt = {}

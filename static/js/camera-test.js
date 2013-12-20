@@ -17,6 +17,7 @@ $(function() {
         this.upY = 0;
         this.upZ = 1;
         this.fov = 20;
+        this.aspect = 1.33;
     };
 
     // the first example from ET
@@ -29,7 +30,7 @@ $(function() {
         -1.8354335535e-01, -8.7809532911e-01, 4.4188282350e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(-1.2929377478e+00, 5.2709726605e+00, -3.5961823466e+00);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
     var f = 6.9416663747e+02;
     var k1 = -9.2576830301e-02;
     var k2 = 1.3775928822e-02;
@@ -38,7 +39,7 @@ $(function() {
         9.9713499420e-03, -6.4532474240e-01, 7.6384327518e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(-6.9433614363e-01, 3.7132357553e+00, -2.7471279934e+00);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
     var f = 6.8655410355e+02;
     var k1 = -8.6792393851e-02;
     var k2 = -9.4246113619e-05;
@@ -47,7 +48,7 @@ $(function() {
         -1.6405256000e-01, -9.1953235414e-01, 3.5713723868e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(-1.1036383962e+00, 5.3499064115e+00, -4.1230400203e+00);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
     var f = 6.9246346201e+02;
     var k1 = -8.0576084526e-02;
     var k2 = -2.5605386746e-02;
@@ -56,7 +57,7 @@ $(function() {
         -3.9262482094e-01, -6.5796544024e-01, 6.4259414052e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(1.3096118463e+00, 4.3049601868e+00, -2.4749939087e+00);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
     var f = 6.8492819439e+02;
     var k1 = -1.3836464782e-01;
     var k2 = -9.1807459129e-03;
@@ -65,7 +66,7 @@ $(function() {
         -2.3655905823e-01, 2.3747192463e-02, 9.7132686713e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(1.3857183845e+00, -2.9406252708e-01, -4.4412033352e-01);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
     var f = 6.8327919943e+02;
     var k1 = -1.2278924051e-01;
     var k2 = -2.7048338379e-02;
@@ -74,7 +75,7 @@ $(function() {
         -6.1311060992e-03, -7.6399940894e-03, 9.9995201886e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(1.0594095686e-01, 2.2464434939e-02, -4.7708863934e-01);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
     var f = 6.8538809345e+02;
     var k1 = -1.3676505830e-01;
     var k2 = 2.7173363847e-02;
@@ -83,7 +84,7 @@ $(function() {
         -6.3778297760e-02, 4.0726747842e-02, 9.9713271972e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(7.2303634691e-01, -7.2333915163e-01, -9.4071995609e-01);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
     var f = 6.8300299883e+02;
     var k1 = -1.2397648847e-01;
     var k2 = -1.4242620399e-02;
@@ -92,7 +93,7 @@ $(function() {
         -2.5783770907e-01, 1.9661410162e-01, 9.4597178120e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(-5.2729402376e-01, 2.5424960663e+00, -1.1710136997e+00);
-    bundlerCameras.push(GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t));
+    bundlerCameras.push(GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t));
 
     var f = 6.8342884734e+02;
     var k1 = -8.4659598391e-02;
@@ -102,7 +103,7 @@ $(function() {
         -1.8354335535e-01, -8.7809532911e-01, 4.4188282350e-01, 0,
         0, 0, 0, 1);
     var t = new GL.Vector(-1.2929377478e+00, 5.2709726605e+00, -3.5961823466e+00);
-    var bundlerCamera = GL.Mesh.bundlerCamera(gl, f, k1, k2, R, t);
+    var bundlerCamera = GL.Mesh.bundlerCamera(f, k1, k2, 1.33, R, t);
 
     var params = new Parameters();
     // define the DAT.GUI
@@ -118,13 +119,14 @@ $(function() {
     gui.add(params, 'upY', 0.0, 1.0).onChange(function() { update(); });
     gui.add(params, 'upZ', 0.0, 1.0).onChange(function() { update(); });
     gui.add(params, 'fov', 0.0, 90.0).onChange(function() { update(); });
+    gui.add(params, 'aspect', 0.5, 2.0).onChange(function() { update(); });
 
     var camera;
     var update = function() {
         var pos = new GL.Vector(params.x, params.y, params.z);
         var lookat = new GL.Vector(params.lookAtX, params.lookAtY, params.lookAtZ);
         var up = new GL.Vector(params.upX, params.upY, params.upZ);
-        camera = GL.Mesh.camera(gl, pos, params.fov, lookat, up);
+        camera = GL.Mesh.camera(pos, params.fov, params.aspect, lookat, up);
     };
     update();
 
@@ -157,8 +159,8 @@ $(function() {
         gl.translate(0, 0, -params.length);
         gl.rotate(angleX, 1, 0, 0);
         gl.rotate(angleY, 0, 1, 0);
-        // shader.draw(camera, gl.LINES);
-        // shader.draw(sphere, gl.LINES);
+        shader.draw(camera, gl.LINES);
+        shader.draw(sphere, gl.LINES);
         bundlerCameras.forEach(function(c) {
             shader.draw(c, gl.LINES);
         });
