@@ -1,5 +1,9 @@
+var PI = 3.14159;
+
+// fov is given in RADIANS
 var addCameraToMesh = function(mesh, pos, fov, aspect, lookat, up) {
-    var projection = GL.Matrix.perspective(fov, 1.0/aspect, 0.25, 1);
+    console.log(pos, fov, aspect);
+    var projection = GL.Matrix.perspective(fov*180.0/PI, 1.0/aspect, 0.25, 1);
     var modelView = GL.Matrix.lookAt(pos.x, pos.y, pos.z, 
             lookat.x, lookat.y, lookat.z, 
             up.x, up.y, up.z);
@@ -16,37 +20,30 @@ var addCameraToMesh = function(mesh, pos, fov, aspect, lookat, up) {
                 );
         return unprojectMatrix.transformPoint(point);
     };
-    var corners = [unproject(0, 0, 0),
-        unproject(w, 0, 0),
-        unproject(0, h, 0),
-        unproject(w, h, 0),
-        unproject(0, 0, 1),
+    var corners = [unproject(0, 0, 1),
         unproject(w, 0, 1),
-        unproject(0, h, 1),
         unproject(w, h, 1),
+        unproject(0, h, 1),
         eye];
 
-    var vertices = [];
-    for (var i = 0; i < corners.length; i++)
-        vertices.push(corners[i].toArray());
-
-    var lines = [];
-    for (var i = 0; i < 8; i++) {
-        if (i < 4) {
-            lines.push(8);
-            lines.push(i);
-        }
-        for (var j = 0; j < 3; j++) {
-            lines.push(i);
-            lines.push(i ^ (1 << j));
-        }
-    }
-    for (var i = 0; i < lines.length; i++) {
-        lines[i] += mesh.vertices.length;
+    var offset = mesh.vertices.length;
+    for (var i = 0; i < corners.length; i++) {
+        mesh.vertices.push(corners[i].toArray());
     }
 
-    mesh.vertices = mesh.vertices.concat(vertices);
-    mesh.lines = mesh.lines.concat(lines);
+    var pushLine = function(i1, i2) {
+        mesh.lines.push(i1+offset);
+        mesh.lines.push(i2+offset);
+    }
+
+    pushLine(0, 1);
+    pushLine(1, 2);
+    pushLine(2, 3);
+    pushLine(3, 0);
+    pushLine(4, 0);
+    pushLine(4, 1);
+    pushLine(4, 2);
+    pushLine(4, 3);
 };
 
 GL.Mesh.camera = function(pos, fov, aspect, lookat, up, options) {

@@ -1,6 +1,7 @@
 import sqlite3
 import gzip
 import msgpack
+from math import isnan
 
 conn = sqlite3.connect('times-square-v7.db')
 times_square = None
@@ -36,9 +37,12 @@ def createDb():
 			't1 real not null,' +
 			't2 real not null,' +
 			't3 real not null,' + 
-			'fovy real,' + 
-			'aspect real)')
+			'fovy real not null,' + 
+			'aspect real not null)')
 	conn.commit()
+
+def filterNone(objs):
+	return [obj for obj in objs if None not in obj and len(filter(isnan, obj)) == 0]
 
 def loadPoints():
 	global times_square
@@ -47,10 +51,16 @@ def loadPoints():
 
 def migrate():
 	global times_square
-	points = [x[:6]+x[9:] for x in times_square['points']['attributes']]
-	conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx) values (?,?,?,?,?,?,?,?,?,?)", points)
-	cameras = times_square['cameras']['attributes']
+# cameras
+	cameras = filterNone(times_square['cameras']['attributes'])
+	print cameras[0]
+	print len(cameras)
 	conn.executemany("insert into cameras (f,k1,k2,R11,R12,R13,R21,R22,R23,R31,R32,R33,t1,t2,t3,fovy,aspect) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", cameras)
+# points
+	points = filterNone([x[:6]+x[9:] for x in times_square['points']['attributes']])
+	print len(points)
+	conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx) values (?,?,?,?,?,?,?,?,?,?)", points)
+# commit
 	conn.commit()
 
 def main():
