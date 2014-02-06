@@ -1,4 +1,5 @@
 $(function() {
+    setupAxisOrb();
     document.getElementById("canvas").getContext("webgl", {premultipliedAlpha: false});
 
     // proceed with WebGL
@@ -116,6 +117,7 @@ $(function() {
             gl_FragColor = color;\
         }\
         ');
+
     // boring camera shader
     var cameraShader = new GL.Shader('\
         void main() {\
@@ -125,7 +127,7 @@ $(function() {
         void main() {\
             gl_FragColor = vec4(0.5, 0.25, 0.5, 1.0);\
         }\
-        ');
+    ');
     // regular shader
     var particleShader = new GL.Shader('\
         attribute vec2 t_range;\
@@ -207,15 +209,17 @@ $(function() {
         var xDir = gl.unProject(x+10, y, 1).subtract(start).unit();
         var yDir = gl.unProject(x, y+10, 1).subtract(start).unit();
         var mx = GL.Matrix.rotate(dy*rotateSpeed, xDir.x, xDir.y, xDir.z); 
-        var my = GL.Matrix.rotate(-dx*rotateSpeed, yDir.x, yDir.y, yDir.z); 
+        var my = GL.Matrix.rotate(dx*rotateSpeed, yDir.x, yDir.y, yDir.z); 
         params.rotation = params.rotation.multiply(my).multiply(mx);
+        axisOrbRotation = params.rotation;
     }
 
     gl.onmousemove = function(e) {
         if (e.dragging) {
             params.angleX -= e.deltaX * 0.25;
             params.angleY += e.deltaY * 0.25;
-            gl.rotateWorldXY(e.x, -e.y, e.deltaX/gl.canvas.width, e.deltaY/gl.canvas.height)
+            var minLength = Math.min(gl.canvas.width, gl.canvas.height);
+            gl.rotateWorldXY(e.x, -e.y, e.deltaX/minLength, e.deltaY/minLength);
 
             if (params.angleY > 180.0) {
                 params.angleY -= 360.0;
@@ -361,7 +365,7 @@ $(function() {
       params.time = (data.tmin + data.tmax) / 2;
       params.startTime = params.time;
       params.windowSize = (params.time - data.tmin)/4;
-      params.camCount = 10000;//data.camCount;
+      params.camCount = 1000;//data.camCount;
       params.ptCount = data.ptCount;
       params.chunkCount = 2;//data.chunkCount;
       gui.add(params, 'time', data.tmin, data.tmax);
@@ -374,7 +378,7 @@ $(function() {
     });
 
     var fetchCameras = function(start, allDoneCallback, callbackArgs) {
-      var num = 10000;
+      var num = 1000;
       start = start || 0;
       var end = params.camCount;
       $.getJSON('api/getCamera?num='+num+'&start='+start, function(data) {
