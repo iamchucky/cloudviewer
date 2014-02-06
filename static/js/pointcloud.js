@@ -18,6 +18,7 @@ $(function() {
         this.far = 2500.0;
         this.camCount = 0;
         this.ptCount = 0;
+        this.chunkCount = 0;
     };
     var params = new Parameters();
     // define the DAT.GUI
@@ -361,7 +362,8 @@ $(function() {
       params.startTime = params.time;
       params.windowSize = (params.time - data.tmin)/4;
       params.camCount = 10000;//data.camCount;
-      params.ptCount = 300000; //data.ptCount;
+      params.ptCount = data.ptCount;
+      params.chunkCount = 2;//data.chunkCount;
       gui.add(params, 'time', data.tmin, data.tmax);
       gui.add(params, 'cameraTime', data.tmin, data.tmax);
       gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
@@ -387,12 +389,9 @@ $(function() {
       });
     };
 
-    var fetchParticles = function(start, allDoneCallback, callbackArgs) {
-      var num = 100000;
-      start = start || 0;
-      var end = params.ptCount;
+    var fetchParticles = function(chunkId, allDoneCallback, callbackArgs) {
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', 'api/getPt?num='+num+'&start='+start, true);
+      xhr.open('GET', 'api/getPtChunk?id='+chunkId, true);
       xhr.responseType = 'arraybuffer';
       xhr.overrideMimeType('text/plain; charset=x-user-defined');
       xhr.onload = function () {
@@ -419,8 +418,8 @@ $(function() {
           ps.addVertexBuffer('idxs', 'idx');
           ps.vertexBuffers['idx'].buffer = idxBuffer;
           particleSystem.push(ps);
-          if (start < end) {
-            fetchParticles(start+num, allDoneCallback, callbackArgs);
+          if (chunkId < params.chunkCount-1) {
+            fetchParticles(chunkId+1, allDoneCallback, callbackArgs);
           } else {
             if (allDoneCallback) {
               allDoneCallback.apply(this, callbackArgs);

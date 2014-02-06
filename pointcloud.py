@@ -17,6 +17,7 @@ pointsFields = ['x','y','z','r','g','b','tmin','tmax']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
 db = 'times-square-v7.db'
+chunkSize = 1000000
 
 class Timer:
   def __enter__(self):
@@ -62,6 +63,7 @@ def getCamera():
 def getPt():
   start = request.args.get('start', 0, type=int)
   num = request.args.get('num', 20, type=int)
+
   conn = sqlite3.connect(db)
 
   try:
@@ -77,9 +79,20 @@ def getPt():
 
     # idx based on the row index in the db
     idxs = array.array('f', xrange(start, start+num)).tostring()
+
     return Response(pos_bytes+color_bytes+t_bytes+sources+idxs, mimetype='application/octet-stream')
   finally:
     conn.close()
+
+@app.route('/api/getPtChunk')
+def getPtChunk():
+  chunkId = request.args.get('id', 0, type=int)
+  try:
+    with gzip.open(db.split('.')[0]+'.part_'+str(chunkId)+'.gz', 'rb') as rf:
+      content = rf.read()
+      return Response(content, mimetype='application/octet-stream')
+  except:
+    return
 
 @app.route('/api/getInfo')
 def getInfo():
@@ -151,13 +164,16 @@ def prepareInfo():
     rows = c.execute('select count(idx) from points')
     for row in rows:
       ptCount = row[0]
+    chunkCount = int(math.ceil(float(ptCount)/float(chunkSize)))
+
     with open(db + '_info', 'w') as wf:
       json.dump(
           { 'sources': sources,
             'tmin': tmin,
             'tmax': tmax,
             'camCount': camCount,
-            'ptCount': ptCount }, wf, indent=2)
+            'ptCount': ptCount,
+            'chunkCount': chunkCount }, wf, indent=2)
   finally:
     conn.close()
   print 'done loading db info'
