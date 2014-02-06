@@ -1,4 +1,5 @@
 $(function() {
+    document.getElementById("canvas").getContext("webgl", {premultipliedAlpha: false});
 
     // proceed with WebGL
     var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
@@ -15,6 +16,8 @@ $(function() {
         this.center = new GL.Vector(0, 0, 0);
         this.near = 0.5;
         this.far = 2500.0;
+        this.camCount = 0;
+        this.ptCount = 0;
     };
     var params = new Parameters();
     // define the DAT.GUI
@@ -28,6 +31,17 @@ $(function() {
     gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
         gl.setNearFar(params.near, params.far);
     });
+
+    var fillPointMeta = function(data) {
+      for (var d in data) {
+        $('#point_meta_' + d).html(
+            '<div style="width:100%">'+
+              '<div>'+d+'</div>'+
+              '<div style="position:absolute; right:10px">'+data[d]+'</div>'+
+            '</div>');
+      }
+      $('#point_meta').show();
+    };
 
     var dblclick = function (e) {
         if (gl.ondblclick) gl.ondblclick(e);
@@ -70,6 +84,35 @@ $(function() {
         varying float depth;\
         void main() {\
             gl_FragColor = vec4(vec3((depth-near)/(far-near)), 1.0);\
+        }\
+        ');
+    // point id map and shader
+    var pointIdMap = new GL.Texture(1024, 1024, { format: gl.RGBA });
+    var pointIdShader = new GL.Shader('\
+        attribute vec2 t_range;\
+        attribute float source;\
+        attribute float idx;\
+        uniform float sources[10];\
+        uniform float time;\
+        varying vec4 color;\
+        void main() {\
+            if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
+                gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+                vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
+                gl_PointSize = 1.5*min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
+                float idx0 = floor(idx/16777216.0)/255.0;\
+                float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;\
+                float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;\
+                float idx3 = mod(idx, 256.0)/255.0;\
+                color = vec4(idx0, idx1, idx2, idx3);\
+            } else {\
+                gl_PointSize = 0.0;\
+            }\
+        }\
+        ', '\
+        varying vec4 color;\
+        void main() {\
+            gl_FragColor = color;\
         }\
         ');
     // boring camera shader
@@ -128,7 +171,7 @@ $(function() {
         }\
         ');
     // texture shader
-    var texturePlane = GL.Mesh.plane({ coords: true });
+    var texturePlane = GL.Mesh.plane({ coords: true, format: gl.RGBA });
     var textureShader = new GL.Shader('\
         varying vec2 coord;\
         void main() {\
@@ -144,10 +187,17 @@ $(function() {
         ');
 
     gl.ondblclick = function(e) {
-        depthMap.bind();
+        pointIdMap.bind();
         textureShader.draw(texturePlane);
-        sampleDepthMap(e.x, e.y, gl.canvas.width, gl.canvas.height);
-        gl.ondraw()
+        var pointId = samplePointIdMap(e.x, e.y, gl.canvas.width, gl.canvas.height);
+        $.getJSON('api/getPt.json?num=1&start='+pointId, function(data) {
+          if (data) {
+            var pointData = data['points'][0];
+            params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
+            fillPointMeta(data['points'][0]);
+          }
+        });
+        gl.ondraw();
     };
 
     gl.rotateWorldXY = function(x, y, dx, dy) {
@@ -201,6 +251,23 @@ $(function() {
         params.angleX += 10.0 * speed * (left - right);
     };
 
+    var renderPointIdMap = function() {
+      pointIdMap.unbind();
+      pointIdMap.drawTo(function() {
+        gl.clearColor(0, 0, 0, 0);
+        gl.colorMask(true, true, true, true);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        renderScene(pointIdShader);
+      });
+    };
+    var samplePointIdMap = function(x, y, width, height) {
+        var pixels = new Uint8Array(4);
+        gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];
+        //console.log(pointId);
+        return pointId;
+    }
+
     var renderDepthMap = function() {
         depthMap.unbind();
         depthMap.drawTo(function() {
@@ -231,7 +298,8 @@ $(function() {
     };
 
     gl.ondraw = function() {
-        gl.clearColor(18.0/255.0, 10.0/255.0, 143.0/255.0, 1);
+        //gl.clearColor(18.0/255.0, 10.0/255.0, 143.0/255.0, 1.0);
+        gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.loadIdentity();
         gl.matrixMode(gl.MODELVIEW);
@@ -242,6 +310,7 @@ $(function() {
         renderCameras();
         renderDepthMap();
         renderDepthOverlay();
+        renderPointIdMap();
     };
 
     var renderScene = function(shader) {
@@ -269,7 +338,8 @@ $(function() {
     gl.fullscreen({providedCanvas: true, near: params.near, far: params.far, fov: 45});
     gl.animate();
     //gl.enable(gl.CULL_FACE);
-    gl.clearColor(1.0, 1.0, 1.0, 1);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
 
     var createBuffer = function(array, spacing) {
@@ -283,55 +353,82 @@ $(function() {
 
     // get the time range
     $.getJSON('api/getInfo', function(data) {
-        for (var source in data.sources) {
-            params['source'+source] = true
-            gui.add(params, 'source'+source);
-        }
-        params.time = (data.tmin + data.tmax) / 2;
-        params.startTime = params.time;
-        params.windowSize = (params.time - data.tmin)/4;
-        gui.add(params, 'time', data.tmin, data.tmax);
-        gui.add(params, 'cameraTime', data.tmin, data.tmax);
-        gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
+      for (var source in data.sources) {
+        params['source'+source] = true
+        gui.add(params, 'source'+source);
+      }
+      params.time = (data.tmin + data.tmax) / 2;
+      params.startTime = params.time;
+      params.windowSize = (params.time - data.tmin)/4;
+      params.camCount = 10000;//data.camCount;
+      params.ptCount = 300000; //data.ptCount;
+      gui.add(params, 'time', data.tmin, data.tmax);
+      gui.add(params, 'cameraTime', data.tmin, data.tmax);
+      gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
+      // now get all the cameras then points
+      fetchCameras(0, fetchParticles, [0, function() {
+        $('#loading_text').hide();
+      }]);
     });
 
-    // now get all the cameras
-    var camNum = 100;
-    for (var i = 0; i < 5; i++) {
-        $.getJSON('api/getCamera?num='+camNum+'&start='+(10000*i), function(data) {
-            cameras.push(GL.Mesh.bundlerCameras(data['cameras']));
-        });
-    }
-    // now get all the particles
-    var num = 100000;
-    for (var i = 0; i < 5; i++) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'api/getPt?num='+num+'&start='+(1000000*i), true);
-        xhr.responseType = 'arraybuffer';
-        xhr.overrideMimeType('text/plain; charset=x-user-defined');
-        xhr.onload = function () {
-            if (this.response) {
-                var floatArray = new Float32Array(this.response);
-                var floats = 9;
-                var posArray = floatArray.subarray(0, 3*floatArray.length/9);
-                var colorArray = floatArray.subarray(3*floatArray.length/9, 6*floatArray.length/9);
-                var timeArray = floatArray.subarray(6*floatArray.length/9, 8*floatArray.length/9);
-                var sourceArray = floatArray.subarray(8*floatArray.length/9, floatArray.length);
-                var posBuffer = createBuffer(posArray, 3);
-                var colorBuffer = createBuffer(colorArray, 3);
-                var timeBuffer = createBuffer(timeArray, 2);
-                var sourceBuffer = createBuffer(sourceArray, 1);
-                var ps = new GL.Mesh({triangles:false, colors:true});
-                ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
-                ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
-                ps.addVertexBuffer('times', 't_range');
-                ps.vertexBuffers['t_range'].buffer = timeBuffer;
-                ps.addVertexBuffer('sources', 'source');
-                ps.vertexBuffers['source'].buffer = sourceBuffer;
-                particleSystem.push(ps);
+    var fetchCameras = function(start, allDoneCallback, callbackArgs) {
+      var num = 10000;
+      start = start || 0;
+      var end = params.camCount;
+      $.getJSON('api/getCamera?num='+num+'&start='+start, function(data) {
+        cameras.push(GL.Mesh.bundlerCameras(data['cameras']));
+        if (start < end) {
+          fetchCameras(start+num, allDoneCallback, callbackArgs);
+        } else {
+          if (allDoneCallback) {
+            allDoneCallback.apply(this, callbackArgs);
+          }
+        }
+      });
+    };
+
+    var fetchParticles = function(start, allDoneCallback, callbackArgs) {
+      var num = 100000;
+      start = start || 0;
+      var end = params.ptCount;
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'api/getPt?num='+num+'&start='+start, true);
+      xhr.responseType = 'arraybuffer';
+      xhr.overrideMimeType('text/plain; charset=x-user-defined');
+      xhr.onload = function () {
+        if (this.response) {
+          var floatArray = new Float32Array(this.response);
+          var floats = 10;
+          var posArray = floatArray.subarray(0, 3*floatArray.length/floats);
+          var colorArray = floatArray.subarray(3*floatArray.length/floats, 6*floatArray.length/floats);
+          var timeArray = floatArray.subarray(6*floatArray.length/floats, 8*floatArray.length/floats);
+          var sourceArray = floatArray.subarray(8*floatArray.length/floats, 9*floatArray.length/floats);
+          var idxArray = floatArray.subarray(9*floatArray.length/floats, floatArray.length);
+          var posBuffer = createBuffer(posArray, 3);
+          var colorBuffer = createBuffer(colorArray, 3);
+          var timeBuffer = createBuffer(timeArray, 2);
+          var sourceBuffer = createBuffer(sourceArray, 1);
+          var idxBuffer = createBuffer(idxArray, 1);
+          var ps = new GL.Mesh({triangles:false, colors:true});
+          ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
+          ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
+          ps.addVertexBuffer('times', 't_range');
+          ps.vertexBuffers['t_range'].buffer = timeBuffer;
+          ps.addVertexBuffer('sources', 'source');
+          ps.vertexBuffers['source'].buffer = sourceBuffer;
+          ps.addVertexBuffer('idxs', 'idx');
+          ps.vertexBuffers['idx'].buffer = idxBuffer;
+          particleSystem.push(ps);
+          if (start < end) {
+            fetchParticles(start+num, allDoneCallback, callbackArgs);
+          } else {
+            if (allDoneCallback) {
+              allDoneCallback.apply(this, callbackArgs);
             }
-        };
-        xhr.send(null);
-    }
+          }
+        }
+      };
+      xhr.send(null);
+    };
 
 });

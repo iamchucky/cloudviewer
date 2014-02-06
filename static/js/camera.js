@@ -2,7 +2,7 @@ var PI = 3.14159;
 
 // fov is given in RADIANS
 var addCameraToMesh = function(mesh, pos, fov, aspect, lookat, up) {
-    console.log(pos, fov, aspect);
+    //console.log(pos, fov, aspect);
     var projection = GL.Matrix.perspective(fov*180.0/PI, 1.0/aspect, 0.25, 1);
     var modelView = GL.Matrix.lookAt(pos.x, pos.y, pos.z, 
             lookat.x, lookat.y, lookat.z, 

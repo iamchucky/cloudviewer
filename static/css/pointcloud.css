@@ -3,9 +3,41 @@ body {
     margin-top: 50px;
 }
 
+canvas {
+  background: #041615; /* Old browsers */
+  background: -moz-linear-gradient(top,  #041615 0%, #3a3a74 51%, #7575e9 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#041615), color-stop(51%,#3a3a74), color-stop(100%,#7575e9)); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  #041615 0%,#3a3a74 51%,#7575e9 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  #041615 0%,#3a3a74 51%,#7575e9 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  #041615 0%,#3a3a74 51%,#7575e9 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  #041615 0%,#3a3a74 51%,#7575e9 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#041615', endColorstr='#7575e9',GradientType=0 ); /* IE6-9 */
+}
+
 .form {
     padding: 20px;
     width: 300px;
     height: 100%;
     float: left;
+}
+
+#point_meta {
+    display: none;
+    top: 0px;
+    position: absolute;
+    color: white;
+    list-style: none;
+    padding: 10px;
+    width: 150px;
+}
+
+#point_meta li div {
+    float: left;
+}
+
+#loading_text {
+    position: absolute;
+    color: white;
+    top: 10px;
+    left: 10px;
 }
