@@ -89,7 +89,6 @@ $(function() {
         }\
         ');
     // point id map and shader
-    var pointIdMap = new GL.Texture(1024, 1024, { format: gl.RGBA });
     var pointIdShader = new GL.Shader('\
         attribute vec2 t_range;\
         attribute float source;\
@@ -101,7 +100,7 @@ $(function() {
             if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
                 gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
                 vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-                gl_PointSize = 1.5*min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
+                gl_PointSize = min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
                 float idx0 = floor(idx/16777216.0)/255.0;\
                 float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;\
                 float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;\
@@ -114,6 +113,11 @@ $(function() {
         ', '\
         varying vec4 color;\
         void main() {\
+            float a = pow(2.0*(gl_PointCoord.x-0.5), 2.0);\
+            float b = pow(2.0*(gl_PointCoord.y-0.5), 2.0);\
+            if (1.0-a-b < 0.0) {\
+                discard;\
+            }\
             gl_FragColor = color;\
         }\
         ');
@@ -190,9 +194,12 @@ $(function() {
         ');
 
     gl.ondblclick = function(e) {
-        pointIdMap.bind();
-        textureShader.draw(texturePlane);
+        renderPointIdMap();
         var pointId = samplePointIdMap(e.x, e.y, gl.canvas.width, gl.canvas.height);
+        if (pointId == 0) {
+          gl.ondraw();
+          return;
+        }
         $.getJSON('api/getPt.json?num=1&start='+pointId, function(data) {
           if (data) {
             var pointData = data['points'][0];
@@ -257,13 +264,10 @@ $(function() {
     };
 
     var renderPointIdMap = function() {
-      pointIdMap.unbind();
-      pointIdMap.drawTo(function() {
-        gl.clearColor(0, 0, 0, 0);
-        gl.colorMask(true, true, true, true);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        renderScene(pointIdShader);
-      });
+      gl.clearColor(0, 0, 0, 0);
+      gl.colorMask(true, true, true, true);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      renderScene(pointIdShader);
     };
     var samplePointIdMap = function(x, y, width, height) {
         var pixels = new Uint8Array(4);
@@ -315,7 +319,6 @@ $(function() {
         renderCameras();
         renderDepthMap();
         renderDepthOverlay();
-        renderPointIdMap();
     };
 
     var renderScene = function(shader) {
