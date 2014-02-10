@@ -20,6 +20,7 @@ $(function() {
         this.camCount = 0;
         this.ptCount = 0;
         this.chunkCount = 0;
+        this.showDepthMap = true;
     };
     var params = new Parameters();
     // define the DAT.GUI
@@ -33,6 +34,7 @@ $(function() {
     gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
         gl.setNearFar(params.near, params.far);
     });
+    gui.add(params, 'showDepthMap');
 
     var fillPointMeta = function(data) {
       for (var d in data) {
@@ -221,12 +223,119 @@ $(function() {
         axisOrbRotation = params.rotation;
     }
 
+    var hitHyper = function(center, radius, viewpoint, viewplane, hitplane) {
+      var hitplaney = center.subtract(hitplane).length();
+      var viewpointx = center.subtract(viewpoint).length();
+
+      var a = hitplaney/ viewpointx;
+      var b = -hitplaney;
+      var c = radius * radius / 2.0;
+      var delta = b * b - 4 * a * c;
+
+      if (delta > 0) {
+        var x1 = (-b - Math.sqrt (delta)) / (2.0 * a);
+        var x2 = (-b + Math.sqrt (delta)) / (2.0 * a);
+
+        // always take the minimum value solution
+        var xval = x1;
+        // alternatively it also could be the other part of the equation 
+        // yval=-(hitplaney/viewpointx)*xval+hitplaney;
+        var yval = c / xval;
+
+        // compute the result in 3d space
+        var dirRadial = hitplane.subtract(center);
+        dirRadial = dirRadial.unit();
+        var dirView = viewplane.unit();
+        var hit = center.add(dirRadial.multiply(yval)).add(dirView.multiply(xval));
+
+        return hit;
+      }
+      return null;
+    };
+
+    // Code from MeshLab source at 
+    // https://github.com/kylemcdonald/ofxVCGLib/blob/master/vcglib/wrap/gui/trackutils.h
+    var hitSphere = function(x, y) {
+      var radius = params.length / 10 * 2.5;
+      var center = params.center;
+      var tracer = new GL.Raytracer();
+      var ray = tracer.getRayForPixel(x, y);
+      
+      // GetViewPlane
+      var viewpoint = tracer.eye;
+      var plnorm = viewpoint.subtract(center);
+      plnorm = plnorm.unit();
+      var ploffset = plnorm.dot(center);
+
+      // IntersectionLinePlane
+      var epsilon = 1e-8;
+      var k = plnorm.dot(ray);
+      var hitplane = null;
+      if ((k < -epsilon) || (k > epsilon)) {
+        var r = (ploffset - plnorm.dot(tracer.eye))/k;  // Compute ray distance
+        hitplane = tracer.eye.add(ray.multiply(r));
+      } else {
+        console.log('hitplane is null');
+      }
+      
+      var resSp = GL.Raytracer.hitTestSphere(
+            tracer.eye, ray, params.center, radius);
+      var resHp = hitHyper(center, radius, viewpoint, plnorm, hitplane);
+
+      // four cases
+      // 1) Degenerate line tangent to both sphere and hyperboloid!
+      if (!resSp && !resHp) {
+        // most likely will never get hit
+        return null;
+      } 
+
+      // 2) line cross only the sphere
+      if (resSp && !resHp) {
+        return resSp.hit;
+      }
+
+      // 3) line cross only the hyperboloid
+      if (!resSp && resHp) {
+        return resHp;
+      }
+      
+      // 4) line cross both sphere and hyperboloid: choose according angle.
+      var vpVec = viewpoint.subtract(center).unit();
+      var resSpVec = resSp.hit.subtract(center).unit();
+      var angleDeg = Math.acos(vpVec.dot(resSpVec))*180.0/Math.PI;
+      
+      if (angleDeg < 45) {
+        return resSp.hit;
+      } else {
+        return resHp;
+      }
+    };
+
+    var rotateWorldWithSphere = function(x, y, dx, dy) {
+      var hitNew = hitSphere(x, y);
+      if (!hitNew)
+        return;
+      var hitOld = hitSphere(x-dx, y-dy);
+      if (!hitOld)
+        return;
+
+      var hitNewVec = hitNew.subtract(params.center).unit();
+      var hitOldVec = hitOld.subtract(params.center).unit();
+      var axis = hitNewVec.cross(hitOldVec).toArray();
+      var angle = Math.acos(hitNewVec.dot(hitOldVec))*180.0/Math.PI;
+
+      var m = GL.Matrix.rotate(-angle, axis[0], axis[1], axis[2]); 
+      params.rotation = params.rotation.multiply(m);
+      axisOrbRotation = params.rotation;
+    };
+
     gl.onmousemove = function(e) {
         if (e.dragging) {
             params.angleX -= e.deltaX * 0.25;
             params.angleY += e.deltaY * 0.25;
-            var minLength = Math.min(gl.canvas.width, gl.canvas.height);
-            gl.rotateWorldXY(e.x, -e.y, e.deltaX/minLength, e.deltaY/minLength);
+            /*var minLength = Math.min(gl.canvas.width, gl.canvas.height);
+            gl.rotateWorldXY(e.x, -e.y, e.deltaX/minLength, e.deltaY/minLength);*/
+            rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
 
             if (params.angleY > 180.0) {
                 params.angleY -= 360.0;
@@ -261,6 +370,8 @@ $(function() {
         var right = GL.keys.D | 0;
         params.angleY += 10.0 * speed * (down - up);
         params.angleX += 10.0 * speed * (left - right);
+        if (up || down || left || right)
+          gl.rotateWorldXY(0, 0, (right-left)/90.0, (down-up)/90.0);
     };
 
     var renderPointIdMap = function() {
@@ -317,8 +428,10 @@ $(function() {
         gl.translate(-params.center.x, -params.center.y, -params.center.z);
         renderScene(particleShader);
         renderCameras();
-        renderDepthMap();
-        renderDepthOverlay();
+        if (params.showDepthMap) {
+          renderDepthMap();
+          renderDepthOverlay();
+        }
     };
 
     var renderScene = function(shader) {
@@ -370,7 +483,7 @@ $(function() {
       params.windowSize = (params.time - data.tmin)/4;
       params.camCount = 1000;//data.camCount;
       params.ptCount = data.ptCount;
-      params.chunkCount = 2;//data.chunkCount;
+      params.chunkCount = 2; //data.chunkCount;
       gui.add(params, 'time', data.tmin, data.tmax);
       gui.add(params, 'cameraTime', data.tmin, data.tmax);
       gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
