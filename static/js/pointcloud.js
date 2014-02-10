@@ -18,7 +18,6 @@ $(function() {
         this.camCount = 0;
         this.ptCount = 0;
         this.chunkCount = 0;
-        this.showDepthMap = true;
     };
     var params = new Parameters();
     // define the DAT.GUI
@@ -30,7 +29,6 @@ $(function() {
     gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
         gl.setNearFar(params.near, params.far);
     });
-    gui.add(params, 'showDepthMap');
 
     var fillPointMeta = function(data) {
       for (var d in data) {
@@ -58,34 +56,6 @@ $(function() {
 
     var particleSystem = [];
     var cameras = [];
-    // depth map and shader
-    var depthMap = new GL.Texture(1024, 1024, { format: gl.RGBA });
-    var depthShader = new GL.Shader('\
-        attribute vec2 t_range;\
-        attribute float source;\
-        uniform float sources[10];\
-        uniform float time;\
-        uniform float far;\
-        uniform float near;\
-        varying float depth;\
-        void main() {\
-            if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
-                gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-                depth = gl_Position.z;\
-                vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-                gl_PointSize = 1.5*min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
-            } else {\
-                gl_PointSize = 0.0;\
-            }\
-        }\
-        ', '\
-        uniform float near;\
-        uniform float far;\
-        varying float depth;\
-        void main() {\
-            gl_FragColor = vec4(vec3((depth-near)/(far-near)), 1.0);\
-        }\
-        ');
     // point id map and shader
     var pointIdShader = new GL.Shader('\
         attribute vec2 t_range;\
@@ -160,36 +130,6 @@ $(function() {
             gl_FragColor = color;\
         }\
         ');
-    var cameraDepthShader = new GL.Shader('\
-        attribute float cameraId;\
-        varying float fid;\
-        void main() {\
-            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-            gl_PointSize = min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
-            fid = cameraId;\
-        }\
-        ', '\
-        varying float fid;\
-        void main() {\
-            int id = int(fid);\
-        }\
-        ');
-    // texture shader
-    var texturePlane = GL.Mesh.plane({ coords: true, format: gl.RGBA });
-    var textureShader = new GL.Shader('\
-        varying vec2 coord;\
-        void main() {\
-            coord = gl_TexCoord.xy;\
-            gl_Position = vec4(coord * 2.0 - 1.0, 0.0, 1.0);\
-        }\
-        ', '\
-        uniform sampler2D texture;\
-        varying vec2 coord;\
-        void main() {\
-            gl_FragColor = texture2D(texture, coord);\
-        }\
-        ');
 
     gl.ondblclick = function(e) {
         renderPointIdMap();
@@ -202,7 +142,7 @@ $(function() {
           if (data) {
             var pointData = data['points'][0];
             params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
-            fillPointMeta(data['points'][0]);
+            fillPointMeta(pointData);
           }
         });
         gl.ondraw();
@@ -409,41 +349,12 @@ $(function() {
       renderScene(pointIdShader);
     };
     var samplePointIdMap = function(x, y, width, height) {
-        var pixels = new Uint8Array(4);
-        gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-        var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];
-        //console.log(pointId);
-        return pointId;
+      var pixels = new Uint8Array(4);
+      gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+      var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];
+      //console.log(pointId);
+      return pointId;
     }
-
-    var renderDepthMap = function() {
-        depthMap.unbind();
-        depthMap.drawTo(function() {
-            gl.clearColor(1, 1, 1, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            renderScene(depthShader);
-        });
-    };
-
-    var sampleDepthMap = function(x, y, width, height) {
-        var pixels = new Uint8Array(4);
-        gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-        if (pixels[0] == 255)
-            return;
-        var depth = params.near + pixels[0]/255.0*(params.far-params.near);
-        var tracer = new GL.Raytracer();
-        var ray = tracer.getRayForPixel(x, y);
-        ray = ray.multiply(depth);
-        var newCenter = tracer.eye.add(ray);
-        params.center = newCenter;
-    }
-
-    var renderDepthOverlay = function() {
-        depthMap.bind();
-        gl.viewport(0, 0, 128, 128);
-        textureShader.draw(texturePlane);
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    };
 
     gl.ondraw = function() {
         //gl.clearColor(18.0/255.0, 10.0/255.0, 143.0/255.0, 1.0);
@@ -456,10 +367,6 @@ $(function() {
         gl.translate(-params.center.x, -params.center.y, -params.center.z);
         renderScene(particleShader);
         renderCameras();
-        if (params.showDepthMap) {
-          renderDepthMap();
-          renderDepthOverlay();
-        }
     };
 
     var renderScene = function(shader) {
