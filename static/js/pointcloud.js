@@ -7,8 +7,6 @@ $(function() {
 
     // Define parameters
     var Parameters = function() {
-        this.angleY = -45;
-        this.angleX = 45;
         this.length = 10.0;
         this.time = 0;
         this.cameraTime = 0;
@@ -25,8 +23,6 @@ $(function() {
     var params = new Parameters();
     // define the DAT.GUI
     var gui = new dat.GUI();
-    gui.add(params, 'angleY', -180, 180).listen();
-    gui.add(params, 'angleX', 0, 360).listen();
     gui.add(params, 'length', 0.5, 2500.0).step(0.5).listen();
     gui.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
         gl.setNearFar(params.near, params.far);
@@ -261,26 +257,12 @@ $(function() {
       var tracer = new GL.Raytracer();
       var ray = tracer.getRayForPixel(x, y);
       
-      // GetViewPlane
+      var viewplane = getViewPlane();
       var viewpoint = tracer.eye;
-      var plnorm = viewpoint.subtract(center);
-      plnorm = plnorm.unit();
-      var ploffset = plnorm.dot(center);
-
-      // IntersectionLinePlane
-      var epsilon = 1e-8;
-      var k = plnorm.dot(ray);
-      var hitplane = null;
-      if ((k < -epsilon) || (k > epsilon)) {
-        var r = (ploffset - plnorm.dot(tracer.eye))/k;  // Compute ray distance
-        hitplane = tracer.eye.add(ray.multiply(r));
-      } else {
-        console.log('hitplane is null');
-      }
+      var hitplane = intersectionLinePlane(viewplane, ray, viewpoint);
       
-      var resSp = GL.Raytracer.hitTestSphere(
-            tracer.eye, ray, params.center, radius);
-      var resHp = hitHyper(center, radius, viewpoint, plnorm, hitplane);
+      var resSp = GL.Raytracer.hitTestSphere(viewpoint, ray, params.center, radius);
+      var resHp = hitHyper(center, radius, viewpoint, viewplane.normal, hitplane);
 
       // four cases
       // 1) Degenerate line tangent to both sphere and hyperboloid!
@@ -329,20 +311,68 @@ $(function() {
       axisOrbRotation = params.rotation;
     };
 
-    gl.onmousemove = function(e) {
-        if (e.dragging) {
-            params.angleX -= e.deltaX * 0.25;
-            params.angleY += e.deltaY * 0.25;
-            /*var minLength = Math.min(gl.canvas.width, gl.canvas.height);
-            gl.rotateWorldXY(e.x, -e.y, e.deltaX/minLength, e.deltaY/minLength);*/
-            rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
+    var getViewPlane = function() {
+      var center = params.center;
+      var tracer = new GL.Raytracer();
 
-            if (params.angleY > 180.0) {
-                params.angleY -= 360.0;
-            } else if (params.angleY < -180.0) {
-                params.angleY += 360.0;
-            }
+      var viewpoint = tracer.eye;
+      var plnorm = viewpoint.subtract(center);
+      plnorm = plnorm.unit();
+      var ploffset = plnorm.dot(center);
+      return {normal: plnorm, offset: ploffset};
+    };
+
+    var intersectionLinePlane = function(plane, line, lineOrigin) {
+      var epsilon = 1e-8;
+      var k = plane.normal.dot(line);
+      var hitplane = null;
+      if ((k < -epsilon) || (k > epsilon)) {
+        var r = (plane.offset - plane.normal.dot(lineOrigin))/k;  // Compute ray distance
+        hitplane = lineOrigin.add(line.multiply(r));
+      } else {
+        //console.log('hitplane is null');
+      }
+      return hitplane;
+    };
+
+    var panWorldXY = function(x, y, dx, dy) {
+      var tracer = new GL.Raytracer();
+      var viewplane = getViewPlane();
+      var viewpoint = tracer.eye;
+
+      var oldRay = tracer.getRayForPixel(x-dx, y-dy);
+      var oldHitplane = intersectionLinePlane(viewplane, oldRay, viewpoint);
+      var newRay = tracer.getRayForPixel(x, y);
+      var newHitplane = intersectionLinePlane(viewplane, newRay, viewpoint);
+
+      var diff = oldHitplane.subtract(newHitplane);
+      params.center = params.center.add(diff);
+    };
+
+    gl.onmouseup = function(e) {
+      $('#canvas').css('cursor', 'auto');
+    };
+
+    gl.onmousemove = function(e) {
+      if (e.dragging) {
+        if (e.ctrlKey) {
+          // pan mode
+          $('#canvas').css('cursor', 'move');
+          panWorldXY(e.x, e.y, e.deltaX, e.deltaY);
+        } else if (e.altKey) {
+          // zoom mode
+          if (e.deltaY < 0) {
+            $('#canvas').css('cursor', '-webkit-zoom-in');
+          } else {
+            $('#canvas').css('cursor', '-webkit-zoom-out');
+          }
+          params.length += 150.0 * e.deltaY / gl.canvas.height;
+        } else {
+          // sphere mode
+          $('#canvas').css('cursor', '-webkit-grabbing');
+          rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
         }
+      }
     };
 
     gl.onmousescroll = function (e) {
@@ -355,7 +385,7 @@ $(function() {
     }
 
     gl.onupdate = function(seconds) {
-        var speed = seconds * 4;
+        var speed = seconds * 40;
 
         // Forward movement
         var up = GL.keys.UP | 0;
@@ -368,8 +398,6 @@ $(function() {
         down = GL.keys.S | 0;
         var left = GL.keys.A | 0;
         var right = GL.keys.D | 0;
-        params.angleY += 10.0 * speed * (down - up);
-        params.angleX += 10.0 * speed * (left - right);
         if (up || down || left || right)
           gl.rotateWorldXY(0, 0, (right-left)/90.0, (down-up)/90.0);
     };
