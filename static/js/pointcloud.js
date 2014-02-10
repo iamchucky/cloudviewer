@@ -15,6 +15,7 @@ $(function() {
       this.center = new GL.Vector(0, 0, 0);
       this.near = 0.5;
       this.far = 2500.0;
+      this.pointSize = 512.0;
       this.camCount = 0;
       this.ptCount = 0;
       this.chunkCount = 0;
@@ -63,12 +64,13 @@ $(function() {
       attribute float idx;\
       uniform float sources[10];\
       uniform float time;\
+      uniform float size;\
       varying vec4 color;\
       void main() {\
         if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
           gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
           vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-          gl_PointSize = min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
+          gl_PointSize = min(255.0, max(2.0, size / -cameraSpace.z));\
           float idx0 = floor(idx/16777216.0)/255.0;\
           float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;\
           float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;\
@@ -108,12 +110,13 @@ $(function() {
       uniform float time;\
       uniform float far;\
       uniform float near;\
+      uniform float size;\
       varying vec4 color;\
       void main() {\
         if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
           gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
           vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-          gl_PointSize = min(255.0, max(2.0, 512.0 / -cameraSpace.z));\
+          gl_PointSize = min(255.0, max(2.0, size / -cameraSpace.z));\
           color = gl_Color;\
         } else {\
           gl_PointSize = 0.0;\
@@ -316,12 +319,21 @@ $(function() {
     };
 
     gl.onmousescroll = function (e) {
-      if (e.wheelDeltaY > 0) {
-        params.length /= 2.0;
-      } else if (e.wheelDeltaY < 0) {
-        params.length *= 2.0;
+      if (e.altKey) {
+        if (e.wheelDeltaY > 0) {
+          params.pointSize *= 2.0;
+        } else if (e.wheelDeltaY < 0) {
+          params.pointSize /= 2.0;
+        }
+        params.pointSize = Math.min(512.0*16.0, Math.max(1.0, params.pointSize));
+      } else {
+        if (e.wheelDeltaY > 0) {
+          params.length /= 2.0;
+        } else if (e.wheelDeltaY < 0) {
+          params.length *= 2.0;
+        }
+        params.length = Math.max(0.5, params.length);
       }
-      params.length = Math.max(0.5, params.length);
     }
 
     gl.onupdate = function(seconds) {
@@ -375,7 +387,9 @@ $(function() {
           sources.push(params[k] == true ? 1 : 0);
       }
       for (var i = 0; i < particleSystem.length; i++) {
-        shader.uniforms({ near: params.near, 
+        shader.uniforms({ 
+          size: params.pointSize,
+          near: params.near, 
           far: params.far, 
           time: params.time, 
           sources: sources })
