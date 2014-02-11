@@ -1,4 +1,4 @@
-GL.Mesh.axisOrb = function() {
+GL.Mesh.Trackball = function() {
   var mesh = new GL.Mesh({triangles:false, lines:true});
   var segments = 50;
   var r = 2.5;
@@ -41,15 +41,15 @@ GL.Mesh.axisOrb = function() {
   return mesh;
 };
 
-var axisOrbRotation = GL.Matrix.identity();
-var setupAxisOrb = function() {
-    document.getElementById("axis_orb").getContext("webgl", {premultipliedAlpha: false});
+var trackballRotation = GL.Matrix.identity();
+var setupTrackball = function() {
+    document.getElementById("trackball").getContext("webgl", {premultipliedAlpha: false});
 
     // proceed with WebGL
-    var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('axis_orb')});
-    var axisOrbMesh = new GL.Mesh.axisOrb();
-    // axis orb shader
-    var axisOrbShader = new GL.Shader('\
+    var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('trackball')});
+    var trackballMesh = new GL.Mesh.Trackball();
+    // trackball shader
+    var trackballShader = new GL.Shader('\
         varying vec4 color;\
         void main() {\
             gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
@@ -75,11 +75,11 @@ var setupAxisOrb = function() {
         gl.loadIdentity();
         gl.matrixMode(gl.MODELVIEW);
         gl.translate(0, 0, -10);
-        gl.multMatrix(axisOrbRotation);
-        renderAxisOrb();
+        gl.multMatrix(trackballRotation);
+        renderTrackball();
     };
-    var renderAxisOrb = function() {
-      axisOrbShader.draw(axisOrbMesh, gl.LINES);
+    var renderTrackball = function() {
+      trackballShader.draw(trackballMesh, gl.LINES);
     };
 
     // MAIN

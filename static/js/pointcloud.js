@@ -1,5 +1,5 @@
 $(function() {
-    setupAxisOrb();
+    setupTrackball();
     document.getElementById("canvas").getContext("webgl", {premultipliedAlpha: false});
 
     // proceed with WebGL
@@ -159,7 +159,7 @@ $(function() {
       var mx = GL.Matrix.rotate(dy*rotateSpeed, xDir.x, xDir.y, xDir.z); 
       var my = GL.Matrix.rotate(dx*rotateSpeed, yDir.x, yDir.y, yDir.z); 
       params.rotation = params.rotation.multiply(my).multiply(mx);
-      axisOrbRotation = params.rotation;
+      trackballRotation = params.rotation;
     }
 
     var hitHyper = function(center, radius, viewpoint, viewplane, hitplane) {
@@ -251,7 +251,7 @@ $(function() {
 
       var m = GL.Matrix.rotate(-angle, axis[0], axis[1], axis[2]); 
       params.rotation = params.rotation.multiply(m);
-      axisOrbRotation = params.rotation;
+      trackballRotation = params.rotation;
     };
 
     var getViewPlane = function() {
@@ -294,11 +294,15 @@ $(function() {
 
     gl.onmouseup = function(e) {
       $('#canvas').css('cursor', 'auto');
+      if (e.which == 3) {
+        // reset trackball to current rotation
+
+      }
     };
 
     gl.onmousemove = function(e) {
-      if (e.dragging) {
-        if (e.ctrlKey) {
+      if (e.dragging && e.which != 3) {
+        if (e.ctrlKey || e.which == 2) {
           // pan mode
           $('#canvas').css('cursor', 'move');
           panWorldXY(e.x, e.y, e.deltaX, e.deltaY);
@@ -325,7 +329,7 @@ $(function() {
         } else if (e.wheelDeltaY < 0) {
           params.pointSize /= 2.0;
         }
-        params.pointSize = Math.min(512.0*16.0, Math.max(1.0, params.pointSize));
+        params.pointSize = Math.min(512.0*512.0, Math.max(1.0, params.pointSize));
       } else {
         if (e.wheelDeltaY > 0) {
           params.length /= 2.0;
