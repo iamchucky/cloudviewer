@@ -105,6 +105,7 @@ $(function() {
     ');
     // regular shader
     var particleShader = new GL.Shader('\
+      attribute float colorf;\
       attribute vec2 t_range;\
       attribute float source;\
       uniform float sources[10];\
@@ -118,7 +119,10 @@ $(function() {
           gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
           vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
           gl_PointSize = min(255.0, max(2.0, size / -cameraSpace.z));\
-          color = gl_Color;\
+          float r = floor(mod(colorf, 16777216.0)/65536.0)/255.0;\
+          float g = floor(mod(colorf, 65536.0)/256.0)/255.0;\
+          float b = mod(colorf, 256.0)/255.0;\
+          color = vec4(r, g, b, 1.0);\
         } else {\
           gl_PointSize = 0.0;\
         }\
@@ -473,18 +477,19 @@ $(function() {
           var chunkSize = params.chunkSize;
           var floatArray = new Float32Array(this.response);
           var posArray = floatArray.subarray(0, 3*chunkSize);
-          var colorArray = floatArray.subarray(3*chunkSize, 6*chunkSize);
-          var timeArray = floatArray.subarray(6*chunkSize, 8*chunkSize);
-          var sourceArray = floatArray.subarray(8*chunkSize, 9*chunkSize);
-          var idxArray = floatArray.subarray(9*chunkSize, floatArray.length);
+          var colorArray = floatArray.subarray(3*chunkSize, 4*chunkSize);
+          var timeArray = floatArray.subarray(4*chunkSize, 6*chunkSize);
+          var sourceArray = floatArray.subarray(6*chunkSize, 7*chunkSize);
+          var idxArray = floatArray.subarray(7*chunkSize, floatArray.length);
           var posBuffer = createBuffer(posArray, 3);
-          var colorBuffer = createBuffer(colorArray, 3);
+          var colorBuffer = createBuffer(colorArray, 1);
           var timeBuffer = createBuffer(timeArray, 2);
           var sourceBuffer = createBuffer(sourceArray, 1);
           var idxBuffer = createBuffer(idxArray, 1);
-          var ps = new GL.Mesh({triangles:false, colors:true});
+          var ps = new GL.Mesh({triangles:false});
           ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
-          ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
+          ps.addVertexBuffer('colors', 'colorf');
+          ps.vertexBuffers['colorf'].buffer = colorBuffer;
           ps.addVertexBuffer('times', 't_range');
           ps.vertexBuffers['t_range'].buffer = timeBuffer;
           ps.addVertexBuffer('sources', 'source');

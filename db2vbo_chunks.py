@@ -31,6 +31,19 @@ def rowsToBytes(rows):
   bytes = array.array('f', data)
   return bytes.tostring()
 
+def colorRowsToBytes(rows):
+  data = []
+  for cols in rows:
+    val = 0.0
+    i = 2
+    for col in cols:
+      val += math.pow(2, 8*i)*col
+      i -= 1
+    data.append(val)
+    
+  bytes = array.array('f', data)
+  return bytes.tostring()
+
 def writeChunk(filename, start, num):
   conn = sqlite3.connect(db)
 
@@ -38,8 +51,8 @@ def writeChunk(filename, start, num):
     c = conn.cursor()
     rows = c.execute('select x,y,z from points limit '+str(start)+','+str(num))
     pos_bytes = rowsToBytes(rows)
-    rows = c.execute('select r/255.0,g/255.0,b/255.0 from points limit '+str(start)+','+str(num))
-    color_bytes = rowsToBytes(rows)
+    rows = c.execute('select r,g,b from points limit '+str(start)+','+str(num))
+    color_bytes = colorRowsToBytes(rows)
     rows = c.execute('select tmin,tmax from points limit '+str(start)+','+str(num))
     t_bytes = rowsToBytes(rows)
     rows = c.execute('select source from points limit '+str(start)+','+str(num))
