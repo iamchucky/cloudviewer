@@ -19,6 +19,7 @@ $(function() {
       this.camCount = 0;
       this.ptCount = 0;
       this.chunkCount = 0;
+      this.chunkSize = 0;
     };
     var params = new Parameters();
     // define the DAT.GUI
@@ -436,6 +437,7 @@ $(function() {
       params.camCount = 1000;//data.camCount;
       params.ptCount = data.ptCount;
       params.chunkCount = 2; //data.chunkCount;
+      params.chunkSize = data.chunkSize;
       gui.add(params, 'time', data.tmin, data.tmax);
       gui.add(params, 'cameraTime', data.tmin, data.tmax);
       gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
@@ -468,13 +470,13 @@ $(function() {
       xhr.overrideMimeType('text/plain; charset=x-user-defined');
       xhr.onload = function () {
         if (this.response) {
+          var chunkSize = params.chunkSize;
           var floatArray = new Float32Array(this.response);
-          var floats = 10;
-          var posArray = floatArray.subarray(0, 3*floatArray.length/floats);
-          var colorArray = floatArray.subarray(3*floatArray.length/floats, 6*floatArray.length/floats);
-          var timeArray = floatArray.subarray(6*floatArray.length/floats, 8*floatArray.length/floats);
-          var sourceArray = floatArray.subarray(8*floatArray.length/floats, 9*floatArray.length/floats);
-          var idxArray = floatArray.subarray(9*floatArray.length/floats, floatArray.length);
+          var posArray = floatArray.subarray(0, 3*chunkSize);
+          var colorArray = floatArray.subarray(3*chunkSize, 6*chunkSize);
+          var timeArray = floatArray.subarray(6*chunkSize, 8*chunkSize);
+          var sourceArray = floatArray.subarray(8*chunkSize, 9*chunkSize);
+          var idxArray = floatArray.subarray(9*chunkSize, floatArray.length);
           var posBuffer = createBuffer(posArray, 3);
           var colorBuffer = createBuffer(colorArray, 3);
           var timeBuffer = createBuffer(timeArray, 2);

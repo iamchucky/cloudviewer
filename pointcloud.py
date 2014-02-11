@@ -4,7 +4,6 @@ import logging
 import sqlite3
 import math
 import msgpack
-import gzip
 import array
 import time
 import json
@@ -88,9 +87,11 @@ def getPt():
 def getPtChunk():
   chunkId = request.args.get('id', 0, type=int)
   try:
-    with gzip.open(db.split('.')[0]+'.part_'+str(chunkId)+'.gz', 'rb') as rf:
+    with open(db.split('.')[0]+'.part_'+str(chunkId)+'.gz', 'rb') as rf:
       content = rf.read()
-      return Response(content, mimetype='application/octet-stream')
+      resp = Response(content, mimetype='application/octet-stream')
+      resp.headers['Content-Encoding'] = 'gzip'
+      return resp
   except:
     return
 
@@ -173,7 +174,8 @@ def prepareInfo():
             'tmax': tmax,
             'camCount': camCount,
             'ptCount': ptCount,
-            'chunkCount': chunkCount }, wf, indent=2)
+            'chunkCount': chunkCount,
+            'chunkSize': chunkSize }, wf, indent=2)
   finally:
     conn.close()
   print 'done loading db info'
