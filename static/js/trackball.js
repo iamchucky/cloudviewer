@@ -52,10 +52,6 @@ var Trackball = function() {
 
 Trackball.prototype.init = function() {
   var self = this;
-
-  // proceed with WebGL
-  var gl = GL.create({alpha: true, preserveDrawingBuffer: true, canvas: document.getElementById('trackball')});
-  this.gl = gl;
   this.mesh = new GL.Mesh.Trackball();
   
   this.shader = new GL.Shader('\
@@ -76,23 +72,4 @@ Trackball.prototype.init = function() {
       gl_FragColor = color;\
     }\
   ');
-
-  gl.ondraw = function() {
-    //gl.clearColor(18.0/255.0, 10.0/255.0, 143.0/255.0, 1.0);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.loadIdentity();
-    gl.matrixMode(gl.MODELVIEW);
-    gl.translate(0, 0, -10);
-    gl.multMatrix(self.rotation);
-    gl.multMatrix(self.invRotation);
-    self.shader.draw(self.mesh, gl.LINES);
-  };
-
-  // MAIN
-  gl.fullscreen({providedCanvas: true, fov: 45});
-  gl.animate();
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.enable(gl.DEPTH_TEST);
 };

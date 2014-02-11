@@ -1,8 +1,7 @@
 $(function() {
-  var trackball = new Trackball();
-
   // proceed with WebGL
   var gl = GL.create({alpha: true, preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
+  var trackball = new Trackball();
 
   // Define parameters
   var Parameters = function() {
@@ -386,6 +385,15 @@ $(function() {
     gl.translate(-params.center.x, -params.center.y, -params.center.z);
     renderScene(particleShader);
     renderCameras();
+
+    // use push matrix to allow different trackball translation from world
+    gl.pushMatrix();
+    gl.loadIdentity();
+    gl.matrixMode(gl.MODELVIEW);
+    gl.translate(0, 0, -10);
+    gl.multMatrix(params.rotation);
+    renderTrackball();
+    gl.popMatrix();
   };
 
   var renderScene = function(shader) {
@@ -409,6 +417,10 @@ $(function() {
     for (var i = 0; i < cameras.length; i++) {
       cameraShader.draw(cameras[i], gl.LINES); 
     }
+  };
+
+  var renderTrackball = function() {
+    trackball.shader.draw(trackball.mesh, gl.LINES);
   };
 
   // MAIN
