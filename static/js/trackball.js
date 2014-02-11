@@ -41,53 +41,58 @@ GL.Mesh.Trackball = function() {
   return mesh;
 };
 
-var trackballRotation = GL.Matrix.identity();
-var setupTrackball = function() {
-    document.getElementById("trackball").getContext("webgl", {premultipliedAlpha: false});
+var Trackball = function() {
+  this.rotation = GL.Matrix.identity();
+  this.invRotation = GL.Matrix.identity();
+  this.gl = null;
+  this.mesh = null;
+  this.shader = null;
+  this.init();
+};
 
-    // proceed with WebGL
-    var gl = GL.create({preserveDrawingBuffer: true, canvas: document.getElementById('trackball')});
-    var trackballMesh = new GL.Mesh.Trackball();
-    // trackball shader
-    var trackballShader = new GL.Shader('\
-        varying vec4 color;\
-        void main() {\
-            gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-            if (gl_Vertex.x == 0.0) {\
-                color = vec4(1.0, 0.7, 0.7, 1.0);\
-            } else if (gl_Vertex.y == 0.0) {\
-                color = vec4(0.7, 1.0, 0.7, 1.0);\
-            } else {\
-                color = vec4(0.7, 0.7, 1.0, 1.0);\
-            }\
-        }\
-        ', '\
-        varying vec4 color;\
-        void main() {\
-            gl_FragColor = color;\
-        }\
-    ');
+Trackball.prototype.init = function() {
+  var self = this;
 
-    gl.ondraw = function() {
-        //gl.clearColor(18.0/255.0, 10.0/255.0, 143.0/255.0, 1.0);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.loadIdentity();
-        gl.matrixMode(gl.MODELVIEW);
-        gl.translate(0, 0, -10);
-        gl.multMatrix(trackballRotation);
-        renderTrackball();
-    };
-    var renderTrackball = function() {
-      trackballShader.draw(trackballMesh, gl.LINES);
-    };
+  // proceed with WebGL
+  var gl = GL.create({alpha: true, preserveDrawingBuffer: true, canvas: document.getElementById('trackball')});
+  this.gl = gl;
+  this.mesh = new GL.Mesh.Trackball();
+  
+  this.shader = new GL.Shader('\
+    varying vec4 color;\
+    void main() {\
+      gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+      if (gl_Vertex.x == 0.0) {\
+        color = vec4(1.0, 0.7, 0.7, 1.0);\
+      } else if (gl_Vertex.y == 0.0) {\
+        color = vec4(0.7, 1.0, 0.7, 1.0);\
+      } else {\
+        color = vec4(0.7, 0.7, 1.0, 1.0);\
+      }\
+    }\
+    ', '\
+    varying vec4 color;\
+    void main() {\
+      gl_FragColor = color;\
+    }\
+  ');
 
-    // MAIN
-    gl.fullscreen({providedCanvas: true, fov: 45});
-    gl.animate();
-    //gl.enable(gl.CULL_FACE);
+  gl.ondraw = function() {
+    //gl.clearColor(18.0/255.0, 10.0/255.0, 143.0/255.0, 1.0);
     gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.loadIdentity();
+    gl.matrixMode(gl.MODELVIEW);
+    gl.translate(0, 0, -10);
+    gl.multMatrix(self.rotation);
+    gl.multMatrix(self.invRotation);
+    self.shader.draw(self.mesh, gl.LINES);
+  };
 
+  // MAIN
+  gl.fullscreen({providedCanvas: true, fov: 45});
+  gl.animate();
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
 };
