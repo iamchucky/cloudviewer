@@ -103,7 +103,7 @@ $(function() {
       if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-        gl_PointSize = min(255.0, max(2.0, size / -cameraSpace.z));\
+        gl_PointSize = min(16.0, max(2.0, size / -cameraSpace.z));\
         float idx0 = floor(idx/16777216.0)/255.0;\
         float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;\
         float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;\
@@ -116,8 +116,9 @@ $(function() {
     ', '\
     varying vec4 color;\
     void main() {\
-      float a = pow(2.0*(gl_PointCoord.x-0.5), 2.0);\
-      float b = pow(2.0*(gl_PointCoord.y-0.5), 2.0);\
+      vec2 m = vec2(2.0*(gl_PointCoord.x - 0.5), 2.0*(gl_PointCoord.y - 0.5));\
+      float a = m.x * m.x;\
+      float b = m.y * m.y;\
       if (1.0-a-b < 0.0) {\
         discard;\
       }\
@@ -149,7 +150,7 @@ $(function() {
       if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-        gl_PointSize = min(255.0, max(2.0, size / -cameraSpace.z));\
+        gl_PointSize = min(16.0, max(2.0, size / -cameraSpace.z));\
         color = gl_Color;\
       } else {\
         gl_PointSize = 0.0;\
@@ -158,8 +159,9 @@ $(function() {
     ', '\
     varying vec4 color;\
     void main() {\
-      float a = pow(2.0*(gl_PointCoord.x-0.5), 2.0);\
-      float b = pow(2.0*(gl_PointCoord.y-0.5), 2.0);\
+      vec2 m = vec2(2.0*(gl_PointCoord.x - 0.5), 2.0*(gl_PointCoord.y - 0.5));\
+      float a = m.x * m.x;\
+      float b = m.y * m.y;\
       if (1.0-a-b < 0.0) {\
         discard;\
       }\
