@@ -1,3 +1,7 @@
+Number.prototype.padLeft = function (n,str){
+  return Array(n-String(this).length+1).join(str||'0')+this;
+};
+
 $(function() {
 
   var timeProfile = null;
@@ -36,12 +40,29 @@ $(function() {
     gl.setNearFar(params.near, params.far);
   });
 
+  var unixTimeToHumanDate = function(timestamp) {
+    var date = new Date(timestamp * 1000),
+        dateVals = [
+          date.getFullYear(),
+          (date.getMonth()+1).padLeft(2),
+          date.getDate().padLeft(2)];
+    return dateVals.join('/');
+  };
+
   var fillPointMeta = function(data) {
     for (var d in data) {
+      var val = 0;
+      if (d == 'r' || d == 'g' || d == 'b') {
+        val = data[d].toPrecision(3);
+      } else if (d == 'x' || d == 'y' || d == 'z') {
+        val = data[d].toFixed(3);
+      } else if (d == 'tmin' || d == 'tmax') {
+        val = unixTimeToHumanDate(data[d]);
+      }
       $('#point_meta_' + d).html(
           '<div style="width:100%">'+
-            '<div>'+d+'</div>'+
-            '<div style="position:absolute; right:10px">'+data[d]+'</div>'+
+            '<div style="width:40px">'+d+'</div>'+
+            '<div style="margin-left:10px">'+val+'</div>'+
           '</div>');
     }
     $('#point_meta').show();
