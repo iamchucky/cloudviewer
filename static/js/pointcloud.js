@@ -392,7 +392,8 @@ $(function() {
     gl.matrixMode(gl.MODELVIEW);
     gl.translate(0, 0, -10);
     gl.multMatrix(params.rotation);
-    renderTrackball();
+    gl.multMatrix(trackball.invRotation);
+    trackball.render();
     gl.popMatrix();
   };
 
@@ -417,10 +418,6 @@ $(function() {
     for (var i = 0; i < cameras.length; i++) {
       cameraShader.draw(cameras[i], gl.LINES); 
     }
-  };
-
-  var renderTrackball = function() {
-    trackball.shader.draw(trackball.mesh, gl.LINES);
   };
 
   // MAIN

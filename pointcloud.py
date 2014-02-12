@@ -16,7 +16,6 @@ pointsFields = ['x','y','z','r','g','b','tmin','tmax']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
 db = 'times-square-v7.db'
-chunkSize = 1000000
 
 class Timer:
   def __enter__(self):
@@ -139,47 +138,8 @@ def cameraTest():
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
-def prepareInfo():
-  if os.path.exists(db + '_info'):
-    return
-
-  print 'preparing db info...'
-  conn = sqlite3.connect(db)
-  try:
-    c = conn.cursor()
-    rows = c.execute('select min(tmin) from points')
-    tmin = 0
-    for row in rows:
-      tmin = row[0]
-    rows = c.execute('select max(tmax) from points')
-    tmax = 0
-    for row in rows:
-      tmax = row[0]
-    rows = c.execute('select distinct source from points')
-    sources = []
-    for row in rows:
-      sources.append(row)
-    rows = c.execute('select count(f) from cameras')
-    for row in rows:
-      camCount = row[0]
-    rows = c.execute('select count(idx) from points')
-    for row in rows:
-      ptCount = row[0]
-    chunkCount = int(math.ceil(float(ptCount)/float(chunkSize)))
-
-    with open(db + '_info', 'w') as wf:
-      json.dump(
-          { 'sources': sources,
-            'tmin': tmin,
-            'tmax': tmax,
-            'camCount': camCount,
-            'ptCount': ptCount,
-            'chunkCount': chunkCount,
-            'chunkSize': chunkSize }, wf, indent=2)
-  finally:
-    conn.close()
-  print 'done loading db info'
-
 if __name__ == '__main__':
-  prepareInfo()
+  if not os.path.exists(db + '_info'):
+    print '%s_info does not exist, please run db2vbo_chunk.py' % db
+    sys.exit(-1)
   app.run(debug=True)

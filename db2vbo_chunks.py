@@ -78,7 +78,46 @@ def getPtCount():
     conn.close()
   return ptCount
 
+def prepareInfo():
+  print 'preparing db info...'
+  conn = sqlite3.connect(db)
+  try:
+    c = conn.cursor()
+    rows = c.execute('select min(tmin) from points')
+    tmin = 0
+    for row in rows:
+      tmin = row[0]
+    rows = c.execute('select max(tmax) from points')
+    tmax = 0
+    for row in rows:
+      tmax = row[0]
+    rows = c.execute('select distinct source from points')
+    sources = []
+    for row in rows:
+      sources.append(row)
+    rows = c.execute('select count(f) from cameras')
+    for row in rows:
+      camCount = row[0]
+    rows = c.execute('select count(idx) from points')
+    for row in rows:
+      ptCount = row[0]
+    chunkCount = int(math.ceil(float(ptCount)/float(chunkSize)))
+
+    with open(db + '_info', 'w') as wf:
+      json.dump(
+          { 'sources': sources,
+            'tmin': tmin,
+            'tmax': tmax,
+            'camCount': camCount,
+            'ptCount': ptCount,
+            'chunkCount': chunkCount,
+            'chunkSize': chunkSize }, wf, indent=2)
+  finally:
+    conn.close()
+  print 'done loading db info'
+
 if __name__ == '__main__':
+  prepareInfo()
   ptCount = getPtCount()
   print 'total %d points' % ptCount
   curChunk = 0

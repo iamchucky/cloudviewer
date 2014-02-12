@@ -4,47 +4,43 @@ GL.Mesh.Trackball = function() {
   var r = 2.5;
   var offset = mesh.vertices.length;
 
+  var connectLines = function(mesh, offset) {
+    for (var i = offset+1; i < offset+segments; ++i) {
+      mesh.lines.push(i-1);
+      mesh.lines.push(i);
+    }
+    mesh.lines.push(offset+segments-1, offset);
+  };
+
   for (var i = 0; i < segments; ++i) {
     var rad = (i/segments) * Math.PI * 2;
     var vertex = new GL.Vector(r*Math.sin(rad), r*Math.cos(rad), 0);
     mesh.vertices.push(vertex.toArray());
   }
-  for (var i = offset+1; i < offset+segments; ++i) {
-    mesh.lines.push(i-1);
-    mesh.lines.push(i);
-  }
-  mesh.lines.push(offset+segments-1, offset);
+  connectLines(mesh, offset);
+
   offset = mesh.vertices.length;
   for (var i = 0; i < segments; ++i) {
     var rad = (i/segments) * Math.PI * 2;
     var vertex = new GL.Vector(0, r*Math.sin(rad), r*Math.cos(rad));
     mesh.vertices.push(vertex.toArray());
   }
-  for (var i = offset+1; i < offset+segments; ++i) {
-    mesh.lines.push(i-1);
-    mesh.lines.push(i);
-  }
-  mesh.lines.push(offset+segments-1, offset);
+  connectLines(mesh, offset);
+
   offset = mesh.vertices.length;
   for (var i = 0; i < segments; ++i) {
     var rad = (i/segments) * Math.PI * 2;
     var vertex = new GL.Vector(r*Math.sin(rad), 0, r*Math.cos(rad));
     mesh.vertices.push(vertex.toArray());
   }
-  for (var i = offset+1; i < offset+segments; ++i) {
-    mesh.lines.push(i-1);
-    mesh.lines.push(i);
-  }
-  mesh.lines.push(offset+segments-1, offset);
+  connectLines(mesh, offset);
 
   mesh.compile();
   return mesh;
 };
 
 var Trackball = function() {
-  this.rotation = GL.Matrix.identity();
   this.invRotation = GL.Matrix.identity();
-  this.gl = null;
   this.mesh = null;
   this.shader = null;
   this.init();
@@ -72,4 +68,8 @@ Trackball.prototype.init = function() {
       gl_FragColor = color;\
     }\
   ');
+};
+
+Trackball.prototype.render = function() {
+  this.shader.draw(this.mesh, gl.LINES);
 };
