@@ -40,6 +40,7 @@ $(function() {
   viewsFolder.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
   });
+  viewsFolder.add(params, 'pointSize', 1.0, 512.0*16.0).step(1.0).listen();
   viewsFolder.open();
 
   var unixTimeToHumanDate = function(timestamp) {
@@ -364,7 +365,7 @@ $(function() {
       } else if (e.wheelDeltaY < 0) {
         params.pointSize /= 2.0;
       }
-      params.pointSize = Math.min(512.0*512.0, Math.max(1.0, params.pointSize));
+      params.pointSize = Math.min(512.0*16.0, Math.max(1.0, params.pointSize));
     } else {
       if (e.wheelDeltaY > 0) {
         params.length /= 2.0;
