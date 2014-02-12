@@ -1,4 +1,10 @@
 $(function() {
+
+  var timeProfile = null;
+  google.setOnLoadCallback(function() {
+    timeProfile = new TimeProfile();
+  });
+
   // proceed with WebGL
   var gl = GL.create({alpha: true, preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
   var trackball = new Trackball();
@@ -149,6 +155,9 @@ $(function() {
         var pointData = data['points'][0];
         params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
         fillPointMeta(pointData);
+        if (timeProfile) {
+          timeProfile.appendData(data);
+        }
       }
     });
     gl.ondraw();
@@ -393,7 +402,7 @@ $(function() {
     gl.translate(0, 0, -10);
     gl.multMatrix(params.rotation);
     gl.multMatrix(trackball.invRotation);
-    trackball.render();
+    trackball.shader.draw(trackball.mesh, gl.LINES);
     gl.popMatrix();
   };
 

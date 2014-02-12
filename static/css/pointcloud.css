@@ -1,6 +1,6 @@
 
 body {
-    margin-top: 50px;
+  margin-top: 50px;
 }
 
 #canvas {
@@ -15,29 +15,36 @@ body {
 }
 
 .form {
-    padding: 20px;
-    width: 300px;
-    height: 100%;
-    float: left;
+  padding: 20px;
+  width: 300px;
+  height: 100%;
+  float: left;
 }
 
 #point_meta {
-    display: none;
-    top: 0px;
-    position: absolute;
-    color: white;
-    list-style: none;
-    padding: 10px;
-    width: 150px;
+  display: none;
+  top: 0px;
+  position: absolute;
+  color: white;
+  list-style: none;
+  padding: 10px;
+  width: 150px;
 }
 
 #point_meta li div {
-    float: left;
+  float: left;
 }
 
 #loading_text {
-    position: absolute;
-    color: white;
-    top: 10px;
-    left: 10px;
+  position: absolute;
+  color: white;
+  top: 10px;
+  left: 10px;
+}
+
+#time_chart {
+  position: fixed;
+  bottom: -22px;
+  width: 100%;
+  background-color: white;
 }

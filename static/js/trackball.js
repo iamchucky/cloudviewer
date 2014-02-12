@@ -70,6 +70,3 @@ Trackball.prototype.init = function() {
   ');
 };
 
-Trackball.prototype.render = function() {
-  this.shader.draw(this.mesh, gl.LINES);
-};

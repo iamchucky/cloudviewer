@@ -1,7 +1,10 @@
 {% extends "layout.html" %}
 {% block body %}
+<script type="text/javascript" src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization',
+       'version':'1','packages':['timeline']}]}"></script>
 <script src="../static/js/dat.gui.min.js"></script>
 <script src="../static/js/lightgl.js"></script>
+<script src="../static/js/time_profile.js"></script>
 <script src="../static/js/camera.js"></script>
 <script src="../static/js/trackball.js"></script>
 <script src="../static/js/pointcloud.js"></script>
@@ -18,5 +21,6 @@
   <li id='point_meta_tmin'></li>
   <li id='point_meta_tmax'></li>
 </ul>
+<div id="time_chart"></div>
 
 {% endblock %}
