@@ -28,10 +28,22 @@ body {
   color: white;
   list-style: none;
   padding: 10px;
+  text-shadow: 0px 1px 5px black;
 }
 
 #point_meta li div {
   float: left;
+}
+
+#current_time {
+  position: relative;
+  top: -30px;
+  color: white;
+  width: 100px;
+  font-size: large;
+  text-shadow: 0px 1px 5px black;
+  text-align: center;
+  margin: 0 auto;
 }
 
 #loading_text {

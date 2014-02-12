@@ -32,13 +32,15 @@ $(function() {
   var params = new Parameters();
   // define the DAT.GUI
   var gui = new dat.GUI();
-  gui.add(params, 'length', 0.5, 2500.0).step(0.5).listen();
-  gui.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
+  var viewsFolder = gui.addFolder('Views');
+  viewsFolder.add(params, 'length', 0.5, 2500.0).step(0.5).listen();
+  viewsFolder.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
   });
-  gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
+  viewsFolder.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
   });
+  viewsFolder.open();
 
   var unixTimeToHumanDate = function(timestamp) {
     var date = new Date(timestamp * 1000),
@@ -467,12 +469,9 @@ $(function() {
     return buffer;
   }
 
+
   // get the time range
   $.getJSON('api/getInfo', function(data) {
-    for (var source in data.sources) {
-      params['source'+source] = true
-      gui.add(params, 'source'+source);
-    }
     params.time = (data.tmin + data.tmax) / 2;
     params.startTime = params.time;
     params.windowSize = (params.time - data.tmin)/4;
@@ -480,9 +479,26 @@ $(function() {
     params.ptCount = data.ptCount;
     params.chunkCount = 2; //data.chunkCount;
     params.chunkSize = data.chunkSize;
-    gui.add(params, 'time', data.tmin, data.tmax);
-    gui.add(params, 'cameraTime', data.tmin, data.tmax);
-    gui.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
+
+    $('#current_time').text(unixTimeToHumanDate(params.time));
+    // setup gui control
+    var timesFolder = gui.addFolder('Times');
+    var timeControl = timesFolder.add(params, 'time', data.tmin, data.tmax)
+    timeControl.onChange(function(val) {
+      $('#current_time').text(unixTimeToHumanDate(params.time));
+    });
+    timesFolder.add(params, 'cameraTime', data.tmin, data.tmax);
+    timesFolder.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
+    timesFolder.open();
+
+    if (data.sources) {
+      var sourcesFolder = gui.addFolder('Sources');
+      for (var s in data.sources) {
+        params['source'+s] = true
+        sourcesFolder.add(params, 'source'+s);
+      }
+    }
+
     // now get all the cameras then points
     fetchCameras(0, fetchParticles, [0, function() {
       $('#loading_text').hide();
