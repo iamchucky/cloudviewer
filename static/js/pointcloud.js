@@ -28,6 +28,9 @@ $(function() {
     this.ptCount = 0;
     this.chunkCount = 0;
     this.chunkSize = 0;
+    this.resetTrackball = function() {
+      trackball.invRotation = params.rotation.inverse();
+    };
   };
   var params = new Parameters();
   // define the DAT.GUI
@@ -41,6 +44,7 @@ $(function() {
     gl.setNearFar(params.near, params.far);
   });
   viewsFolder.add(params, 'pointSize', 1.0, 512.0*16.0).step(1.0).listen();
+  viewsFolder.add(params, 'resetTrackball');
   viewsFolder.open();
 
   var unixTimeToHumanDate = function(timestamp) {
@@ -332,7 +336,7 @@ $(function() {
     $('#canvas').css('cursor', 'auto');
     if (e.which == 3) {
       // reset trackball to current rotation
-      trackball.invRotation = params.rotation.inverse();
+      params.resetTrackball();
     }
   };
 
