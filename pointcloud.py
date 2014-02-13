@@ -12,7 +12,7 @@ import os
 from flask import Flask, jsonify, Response, render_template, request
 app = Flask(__name__)
 
-pointsFields = ['x','y','z','r','g','b','tmin','tmax']
+pointsFields = ['x','y','z','r','g','b','tmin','tmax', 'idx']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
 available_dataset = ['times-square-v7']

@@ -69,8 +69,8 @@ $(function() {
   var fillPointMeta = function(data) {
     for (var d in data) {
       var val = 0;
-      if (d == 'r' || d == 'g' || d == 'b') {
-        val = data[d].toPrecision(3);
+      if (d == 'r' || d == 'g' || d == 'b' || d == 'idx') {
+        val = data[d];
       } else if (d == 'x' || d == 'y' || d == 'z') {
         val = data[d].toFixed(3);
       } else if (d == 'tmin' || d == 'tmax') {
