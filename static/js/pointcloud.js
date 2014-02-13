@@ -38,8 +38,11 @@ $(function() {
     this.resetTrackball = function() {
       trackball.invRotation = params.rotation.inverse();
     };
+    this.dataset = '';
   };
   var params = new Parameters();
+  params.dataset = $('#dataset').text();
+
   // define the DAT.GUI
   var gui = new dat.GUI();
   var viewsFolder = gui.addFolder('Views');
@@ -183,7 +186,7 @@ $(function() {
       gl.ondraw();
       return;
     }
-    $.getJSON('api/getPtFromRowId?rowid='+pointId, function(data) {
+    $.getJSON('api/getPtFromRowId?dataset='+params.dataset+'&rowid='+pointId, function(data) {
       if (data) {
         var pointData = data['points'][0];
         params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
@@ -480,7 +483,7 @@ $(function() {
 
 
   // get the time range
-  $.getJSON('api/getInfo', function(data) {
+  $.getJSON('api/getInfo?dataset='+params.dataset, function(data) {
     params.time = (data.tmin + data.tmax) / 2;
     params.startTime = params.time;
     params.windowSize = (params.time - data.tmin)/4;
@@ -518,7 +521,8 @@ $(function() {
     var num = 1000;
     start = start || 0;
     var end = params.camCount;
-    $.getJSON('api/getCamera?num='+num+'&start='+start, function(data) {
+    $.getJSON('api/getCamera?dataset='+params.dataset+'&num='+num+'&start='+start, 
+    function(data) {
       cameras.push(GL.Mesh.bundlerCameras(data['cameras']));
       if (start < end) {
         fetchCameras(start+num, allDoneCallback, callbackArgs);
@@ -532,7 +536,7 @@ $(function() {
 
   var fetchParticles = function(chunkId, allDoneCallback, callbackArgs) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'api/getPtChunk?id='+chunkId, true);
+    xhr.open('GET', 'api/getPtChunk?dataset='+params.dataset+'&id='+chunkId, true);
     xhr.responseType = 'arraybuffer';
     xhr.overrideMimeType('text/plain; charset=x-user-defined');
     xhr.onload = function () {

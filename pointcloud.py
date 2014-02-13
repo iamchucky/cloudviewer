@@ -15,7 +15,8 @@ app = Flask(__name__)
 pointsFields = ['x','y','z','r','g','b','tmin','tmax']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
-db = 'times-square-v7.db'
+available_dataset = ['times-square-v7']
+default_dataset = available_dataset[0]
 
 class Timer:
   def __enter__(self):
@@ -48,7 +49,10 @@ def rowsToBytes(rows):
 def getCamera():
   start = request.args.get('start', 0, type=int)
   num = request.args.get('num', 20, type=int)
-  conn = sqlite3.connect(db)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  conn = sqlite3.connect(dataset+'.db')
   try:
     c = conn.cursor()
     rows = c.execute('select '+','.join(camerasFields)+' from cameras limit '+str(start)+','+str(num))
@@ -61,8 +65,10 @@ def getCamera():
 def getPt():
   start = request.args.get('start', 0, type=int)
   num = request.args.get('num', 20, type=int)
-
-  conn = sqlite3.connect(db)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  conn = sqlite3.connect(dataset+'.db')
 
   try:
     c = conn.cursor()
@@ -85,8 +91,11 @@ def getPt():
 @app.route('/api/getPtChunk')
 def getPtChunk():
   chunkId = request.args.get('id', 0, type=int)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
   try:
-    with open(db.split('.')[0]+'.part_'+str(chunkId)+'.gz', 'rb') as rf:
+    with open(dataset+'.part_'+str(chunkId)+'.gz', 'rb') as rf:
       content = rf.read()
       resp = Response(content, mimetype='application/octet-stream')
       resp.headers['Content-Encoding'] = 'gzip'
@@ -96,7 +105,10 @@ def getPtChunk():
 
 @app.route('/api/getInfo')
 def getInfo():
-  with open(db + '_info', 'r') as rf:
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  with open(dataset + '.db_info', 'r') as rf:
     info = json.load(rf)
     return jsonify(info)
 
@@ -104,7 +116,10 @@ def getInfo():
 def getPtColors():
   start = request.args.get('start', 0, type=int)
   num = request.args.get('num', 20, type=int)
-  conn = sqlite3.connect(db)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  conn = sqlite3.connect(dataset+'.db')
 
   try:
     c = conn.cursor()
@@ -118,7 +133,10 @@ def getPtColors():
 def getPtJson():
   start = request.args.get('start', 0, type=int)
   num = request.args.get('num', 20, type=int)
-  conn = sqlite3.connect(db)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  conn = sqlite3.connect(dataset+'.db')
 
   try:
     c = conn.cursor()
@@ -131,7 +149,10 @@ def getPtJson():
 @app.route('/api/getPtFromRowId')
 def getPtFromRowId():
   rowid = request.args.get('rowid', 0, type=int)
-  conn = sqlite3.connect(db)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  conn = sqlite3.connect(dataset+'.db')
 
   try:
     c = conn.cursor()
@@ -143,7 +164,10 @@ def getPtFromRowId():
 
 @app.route('/')
 def index():
-  return render_template('index.html')
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  return render_template('index.html', dataset=dataset)
 
 @app.route('/camera')
 def cameraTest():
@@ -152,7 +176,8 @@ def cameraTest():
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 if __name__ == '__main__':
-  if not os.path.exists(db + '_info'):
-    print '%s_info does not exist, please run db2vbo_chunk.py' % db
-    sys.exit(-1)
+  for dataset in available_dataset:
+    if not os.path.exists(dataset + '.db_info'):
+      print '%s.db_info does not exist, please run db2vbo_chunk.py' % dataset
+      sys.exit(-1)
   app.run(debug=True)
