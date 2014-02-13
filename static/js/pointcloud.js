@@ -532,7 +532,7 @@ $(function() {
     params.windowSize = (params.time - data.tmin)/4;
     params.camCount = 0;//data.camCount;
     params.ptCount = data.ptCount;
-    params.chunkCount = 1; //data.chunkCount;
+    params.chunkCount = data.chunkCount;
     params.chunkSize = data.chunkSize;
 
     $('#current_time').text(unixTimeToHumanDate(params.time));
