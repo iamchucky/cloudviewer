@@ -19,6 +19,8 @@ $(function() {
     canvas: document.getElementById('canvas')
   });
   var trackball = new Trackball();
+  var gl_invalidate = true;
+  var enable_gl_invalidate = true;
 
   // Define parameters
   var Parameters = function() {
@@ -46,15 +48,26 @@ $(function() {
   // define the DAT.GUI
   var gui = new dat.GUI();
   var viewsFolder = gui.addFolder('Views');
-  viewsFolder.add(params, 'length', 0.5, 2500.0).step(0.5).listen();
+  viewsFolder.add(params, 'length', 0.5, 2500.0).step(0.5).listen()
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
   viewsFolder.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
+    gl_invalidate = true;
   });
   viewsFolder.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
+    gl_invalidate = true;
   });
-  viewsFolder.add(params, 'pointSize', 1.0, 512.0*16.0).step(1.0).listen();
-  viewsFolder.add(params, 'resetTrackball');
+  viewsFolder.add(params, 'pointSize', 1.0, 512.0*16.0).step(1.0).listen()
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
+  viewsFolder.add(params, 'resetTrackball')
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
   viewsFolder.open();
 
   var unixTimeToHumanDate = function(timestamp) {
@@ -183,6 +196,7 @@ $(function() {
     renderPointIdMap();
     var pointId = samplePointIdMap(e.x, e.y, gl.canvas.width, gl.canvas.height);
     if (pointId == 0) {
+      gl_invalidate = true;
       gl.ondraw();
       return;
     }
@@ -190,12 +204,15 @@ $(function() {
       if (data) {
         var pointData = data['points'][0];
         params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
+        gl_invalidate = true;
+
         fillPointMeta(pointData);
         if (timeProfile) {
           timeProfile.appendData(data);
         }
       }
     });
+    gl_invalidate = true;
     gl.ondraw();
   };
 
@@ -345,6 +362,7 @@ $(function() {
     if (e.which == 3) {
       // reset trackball to current rotation
       params.resetTrackball();
+      gl_invalidate = true;
     }
   };
 
@@ -367,6 +385,7 @@ $(function() {
         $('#canvas').css('cursor', '-webkit-grabbing');
         rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
       }
+      gl_invalidate = true;
     }
   };
 
@@ -386,6 +405,7 @@ $(function() {
       }
       params.length = Math.max(0.5, params.length);
     }
+    gl_invalidate = true;
   }
 
   gl.onupdate = function(seconds) {
@@ -396,14 +416,19 @@ $(function() {
     var down = GL.keys.DOWN | 0;
     params.length += speed * (down - up);
     params.length = Math.max(0.0, params.length);
+    if (up || down) {
+      gl_invalidate = true;
+    }
 
     // Sideways movement
     up = GL.keys.W | 0;
     down = GL.keys.S | 0;
     var left = GL.keys.A | 0;
     var right = GL.keys.D | 0;
-    if (up || down || left || right)
+    if (up || down || left || right) {
       gl.rotateWorldXY(0, 0, (right-left)/90.0, (down-up)/90.0);
+      gl_invalidate = true;
+    }
   };
 
   var renderPointIdMap = function() {
@@ -420,6 +445,11 @@ $(function() {
   }
 
   gl.ondraw = function() {
+    // be sure to set gl_invalidate to true to redraw
+    if (enable_gl_invalidate && !gl_invalidate) {
+      return;
+    }
+
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
@@ -439,6 +469,8 @@ $(function() {
     gl.multMatrix(trackball.invRotation);
     trackball.shader.draw(trackball.mesh, gl.LINES);
     gl.popMatrix();
+
+    gl_invalidate = false;
   };
 
   var renderScene = function(shader) {
@@ -466,6 +498,7 @@ $(function() {
 
   // MAIN
   gl.fullscreen({providedCanvas: true, near: params.near, far: params.far, fov: 45});
+  gl_invalidate = true;
   gl.animate();
   //gl.enable(gl.CULL_FACE);
   gl.clearColor(0, 0, 0, 0);
@@ -487,7 +520,7 @@ $(function() {
     params.time = (data.tmin + data.tmax) / 2;
     params.startTime = params.time;
     params.windowSize = (params.time - data.tmin)/4;
-    params.camCount = 1000;//data.camCount;
+    params.camCount = 0;//data.camCount;
     params.ptCount = data.ptCount;
     params.chunkCount = 1; //data.chunkCount;
     params.chunkSize = data.chunkSize;
@@ -498,16 +531,25 @@ $(function() {
     var timeControl = timesFolder.add(params, 'time', data.tmin, data.tmax)
     timeControl.onChange(function(val) {
       $('#current_time').text(unixTimeToHumanDate(params.time));
+      gl_invalidate = true;
     });
-    timesFolder.add(params, 'cameraTime', data.tmin, data.tmax);
-    timesFolder.add(params, 'cameraWindow', 0, data.tmax-data.tmin);
+    timesFolder.add(params, 'cameraTime', data.tmin, data.tmax)
+      .onChange(function(val) {
+        gl_invalidate = true;
+      });
+    timesFolder.add(params, 'cameraWindow', 0, data.tmax-data.tmin)
+      .onChange(function(val) {
+        gl_invalidate = true;
+      });
     timesFolder.open();
 
     if (data.sources) {
       var sourcesFolder = gui.addFolder('Sources');
       for (var s in data.sources) {
         params['source'+s] = true
-        sourcesFolder.add(params, 'source'+s);
+        sourcesFolder.add(params, 'source'+s).onChange(function(val) {
+          gl_invalidate = true;
+        });
       }
     }
 
@@ -520,11 +562,16 @@ $(function() {
   var fetchCameras = function(start, allDoneCallback, callbackArgs) {
     var num = 1000;
     start = start || 0;
-    var end = params.camCount;
+    if (params.camCount == 0) {
+      if (allDoneCallback) {
+        allDoneCallback.apply(this, callbackArgs);
+      }
+      return;
+    }
     $.getJSON('api/getCamera?dataset='+params.dataset+'&num='+num+'&start='+start, 
     function(data) {
       cameras.push(GL.Mesh.bundlerCameras(data['cameras']));
-      if (start < end) {
+      if (start + num < params.camCount) {
         fetchCameras(start+num, allDoneCallback, callbackArgs);
       } else {
         if (allDoneCallback) {
@@ -563,6 +610,8 @@ $(function() {
         ps.addVertexBuffer('idxs', 'idx');
         ps.vertexBuffers['idx'].buffer = idxBuffer;
         particleSystem.push(ps);
+
+        gl_invalidate = true;
         if (chunkId < params.chunkCount-1) {
           fetchParticles(chunkId+1, allDoneCallback, callbackArgs);
         } else {
