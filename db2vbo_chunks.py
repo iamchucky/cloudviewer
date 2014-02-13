@@ -57,9 +57,9 @@ def writeChunk(filename, start, num):
     t_bytes = rowsToBytes(rows)
     rows = c.execute('select source from points limit '+str(start)+','+str(num))
     sources = rowsToBytes(rows)
-
     # idx based on the row index in the db
-    idxs = array.array('f', xrange(start, start+num)).tostring()
+    rows = c.execute('select rowid from points limit '+str(start)+','+str(num))
+    idxs = rowsToBytes(rows)
 
     with gzip.open(filename, 'wb') as wf:
       wf.write(pos_bytes+color_bytes+t_bytes+sources+idxs)

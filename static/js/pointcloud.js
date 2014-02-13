@@ -176,7 +176,7 @@ $(function() {
       gl.ondraw();
       return;
     }
-    $.getJSON('api/getPt.json?num=1&start='+pointId, function(data) {
+    $.getJSON('api/getPtFromRowId?rowid='+pointId, function(data) {
       if (data) {
         var pointData = data['points'][0];
         params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
@@ -404,9 +404,11 @@ $(function() {
   };
   var samplePointIdMap = function(x, y, width, height) {
     var pixels = new Uint8Array(4);
+    console.log(x+','+y+','+width+','+height);
     gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    console.log(pixels);
     var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];
-    //console.log(pointId);
+    console.log(pointId);
     return pointId;
   }
 
@@ -480,7 +482,7 @@ $(function() {
     params.windowSize = (params.time - data.tmin)/4;
     params.camCount = 1000;//data.camCount;
     params.ptCount = data.ptCount;
-    params.chunkCount = 2; //data.chunkCount;
+    params.chunkCount = 1; //data.chunkCount;
     params.chunkSize = data.chunkSize;
 
     $('#current_time').text(unixTimeToHumanDate(params.time));

@@ -74,9 +74,9 @@ def getPt():
     t_bytes = rowsToBytes(rows)
     rows = c.execute('select source from points limit '+str(start)+','+str(num))
     sources = rowsToBytes(rows)
-
     # idx based on the row index in the db
-    idxs = array.array('f', xrange(start, start+num)).tostring()
+    rows = c.execute('select rowid from points limit '+str(start)+','+str(num))
+    idxs = rowsToBytes(rows)
 
     return Response(pos_bytes+color_bytes+t_bytes+sources+idxs, mimetype='application/octet-stream')
   finally:
@@ -123,6 +123,19 @@ def getPtJson():
   try:
     c = conn.cursor()
     rows = c.execute('select '+','.join(pointsFields)+' from points limit '+str(start)+','+str(num))
+    pts = [pointToJson(row) for row in rows]
+    return jsonify({'points':pts})
+  finally:
+    conn.close()
+
+@app.route('/api/getPtFromRowId')
+def getPtFromRowId():
+  rowid = request.args.get('rowid', 0, type=int)
+  conn = sqlite3.connect(db)
+
+  try:
+    c = conn.cursor()
+    rows = c.execute('select '+','.join(pointsFields)+' from points where rowid = '+str(rowid))
     pts = [pointToJson(row) for row in rows]
     return jsonify({'points':pts})
   finally:
