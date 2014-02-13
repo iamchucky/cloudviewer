@@ -50,7 +50,7 @@ def createDb():
       'aspect real not null)')
   if has_time_intervals:
     conn.execute('create table if not exists time_intervals(' +
-        'point_idx integer not null,' +
+        'point_idx integer not null primary key,' +
         'interval_str blob not null)')
   conn.commit()
 

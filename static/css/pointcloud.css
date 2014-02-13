@@ -48,8 +48,8 @@ body {
 
 #loading_text {
   position: absolute;
-  color: black;
-  bottom: 10px;
+  color: white;
+  top: 10px;
   left: 10px;
 }
 

@@ -174,26 +174,6 @@ def getPtJson():
   finally:
     conn.close()
 
-@app.route('/api/getPtTimeProfile')
-def getPtTimeProfile():
-  idx = request.args.get('idx', 0, type=int)
-  dataset = request.args.get('dataset', default_dataset, type=str)
-  if dataset not in available_dataset:
-    dataset = default_dataset
-  conn = sqlite3.connect(dataset+'.db')
-
-  try:
-    c = conn.cursor()
-    rows = c.execute('select interval_str from time_intervals where point_idx = '+str(idx))
-    with Timer() as t:
-      times = prepareTimeIntervals(idx, rows)
-
-    return jsonify({
-      'time_intervals': times
-    })
-  finally:
-    conn.close()
-
 @app.route('/api/getPtFromRowId')
 def getPtFromRowId():
   rowid = request.args.get('rowid', 0, type=int)
@@ -207,8 +187,13 @@ def getPtFromRowId():
     rows = c.execute('select '+','.join(pointsFields)+' from points where rowid = '+str(rowid))
     pts = [pointToJson(row) for row in rows]
 
+    idx = pts[0]['idx']
+    rows = c.execute('select interval_str from time_intervals where point_idx = '+str(idx))
+    times = prepareTimeIntervals(idx, rows)
+
     return jsonify({
       'points': pts,
+      'time_intervals': times
     })
   finally:
     conn.close()
