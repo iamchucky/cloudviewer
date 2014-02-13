@@ -10,7 +10,14 @@ $(function() {
   });
 
   // proceed with WebGL
-  var gl = GL.create({alpha: true, preserveDrawingBuffer: true, canvas: document.getElementById('canvas')});
+  // NOTE: need antialias:false so that readPixels works as expected.
+  // need alpha:true to allow alpha channel working.
+  var gl = GL.create({
+    antialias: false, 
+    alpha: true, 
+    preserveDrawingBuffer: true, 
+    canvas: document.getElementById('canvas')
+  });
   var trackball = new Trackball();
 
   // Define parameters
@@ -404,11 +411,8 @@ $(function() {
   };
   var samplePointIdMap = function(x, y, width, height) {
     var pixels = new Uint8Array(4);
-    console.log(x+','+y+','+width+','+height);
     gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    console.log(pixels);
     var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];
-    console.log(pointId);
     return pointId;
   }
 
