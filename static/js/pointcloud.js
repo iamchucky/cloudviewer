@@ -207,13 +207,23 @@ $(function() {
         gl_invalidate = true;
 
         fillPointMeta(pointData);
-        if (timeProfile && data['time_intervals']) {
-          timeProfile.drawChart(data['time_intervals']);
+        if (timeProfile) {
+          requestTimeProfile(pointData['idx']);
         }
       }
     });
     gl_invalidate = true;
     gl.ondraw();
+  };
+
+  var requestTimeProfile = function(idx) {
+    $.getJSON('api/getPtTimeProfile?dataset='+params.dataset+'&idx='+idx, function(data) {
+      if (data) {
+        if (timeProfile && data['time_intervals']) {
+          timeProfile.drawChart(data['time_intervals'], data['num']);
+        }
+      }
+    });
   };
 
   gl.rotateWorldXY = function(x, y, dx, dy) {

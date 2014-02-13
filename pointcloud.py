@@ -47,12 +47,8 @@ def rowsToBytes(rows):
   bytes = array.array('f', data)
   return bytes.tostring()
 
-def prepareTimeIntervals(idx, rows):
+def prepareTimeIntervals(rows):
   data_str = ''
-  for r in rows:
-    data_str = r[0]
-    break
-  data = numpy.fromstring(data_str, dtype=numpy.float32).reshape((-1,2))
   times = {
     'cols': [
       { 'id':'', 'label':'PointID', 'pattern':'', 'type':'string' },
@@ -61,17 +57,21 @@ def prepareTimeIntervals(idx, rows):
     ],
     'rows': []
   }
-  for d in data:
-    start_d = date.fromtimestamp(d[0])
-    end_d = date.fromtimestamp(d[1])
-    start = 'Date(%s)' % str(start_d).replace('-',', ')
-    end = 'Date(%s)' % str(end_d).replace('-',', ')
-    times['rows'].append({
-      'c':[
-        {'v':str(idx), 'f':None}, {'v':start, 'f':None}, {'v':end, 'f':None}
-      ]
-    })
-  return times
+  num_rows = 0
+  for r in rows:
+    num_rows += 1
+    idx = r[0]
+    data_str = r[1]
+    data = numpy.fromstring(data_str, dtype=numpy.float32).reshape((-1,2))
+    for d in data:
+      start_d = date.fromtimestamp(d[0])
+      end_d = date.fromtimestamp(d[1])
+      start = 'Date(%s)' % str(start_d).replace('-',', ')
+      end = 'Date(%s)' % str(end_d).replace('-',', ')
+      times['rows'].append({
+        'c':[{'v':str(idx), 'f':None}, {'v':start, 'f':None}, {'v':end, 'f':None}]
+      })
+  return times, num_rows 
 
 @app.route('/api/getCamera')
 def getCamera():
@@ -186,17 +186,27 @@ def getPtFromRowId():
     c = conn.cursor()
     rows = c.execute('select '+','.join(pointsFields)+' from points where rowid = '+str(rowid))
     pts = [pointToJson(row) for row in rows]
+    return jsonify({'points': pts})
+  finally:
+    conn.close()
 
+@app.route('/api/getPtTimeProfile')
+def getPtTimeProfile():
+  idx = request.args.get('idx', 0, type=int)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  conn = sqlite3.connect(dataset+'.db')
+
+  try:
+    c = conn.cursor()
     times = None
+    num_rows = 0
     if dataset != default_dataset:
-      idx = pts[0]['idx']
-      rows = c.execute('select interval_str from time_intervals where point_idx = '+str(idx))
-      times = prepareTimeIntervals(idx, rows)
+      rows = c.execute('select point_idx,interval_str from time_intervals where point_idx = '+str(idx))
+      times, num_rows = prepareTimeIntervals(rows)
 
-    return jsonify({
-      'points': pts,
-      'time_intervals': times
-    })
+    return jsonify({'time_intervals': times, 'num': num_rows})
   finally:
     conn.close()
 

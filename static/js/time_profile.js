@@ -13,7 +13,8 @@ var TimeProfile = function() {
   };
 };
 
-TimeProfile.prototype.drawChart = function(data) {
+TimeProfile.prototype.drawChart = function(data, rowCount) {
   var dataTable = new google.visualization.DataTable(data);
+  this.options['height'] = 50+rowCount*20;
   this.chart.draw(dataTable, this.options);
 };
