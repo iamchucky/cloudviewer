@@ -187,9 +187,11 @@ def getPtFromRowId():
     rows = c.execute('select '+','.join(pointsFields)+' from points where rowid = '+str(rowid))
     pts = [pointToJson(row) for row in rows]
 
-    idx = pts[0]['idx']
-    rows = c.execute('select interval_str from time_intervals where point_idx = '+str(idx))
-    times = prepareTimeIntervals(idx, rows)
+    times = None
+    if dataset != default_dataset:
+      idx = pts[0]['idx']
+      rows = c.execute('select interval_str from time_intervals where point_idx = '+str(idx))
+      times = prepareTimeIntervals(idx, rows)
 
     return jsonify({
       'points': pts,

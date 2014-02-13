@@ -207,7 +207,7 @@ $(function() {
         gl_invalidate = true;
 
         fillPointMeta(pointData);
-        if (timeProfile) {
+        if (timeProfile && data['time_intervals']) {
           timeProfile.drawChart(data['time_intervals']);
         }
       }
