@@ -48,14 +48,14 @@ body {
 
 #loading_text {
   position: absolute;
-  color: white;
-  top: 10px;
+  color: black;
+  bottom: 10px;
   left: 10px;
 }
 
 #time_chart {
   position: fixed;
-  bottom: -22px;
+  bottom: 0px;
   width: 100%;
   background-color: white;
 }

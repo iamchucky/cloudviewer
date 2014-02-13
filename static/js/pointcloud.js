@@ -208,12 +208,25 @@ $(function() {
 
         fillPointMeta(pointData);
         if (timeProfile) {
-          timeProfile.appendData(data);
+          requestTimeProfile(pointData['idx']);
         }
       }
     });
     gl_invalidate = true;
     gl.ondraw();
+  };
+
+  var requestTimeProfile = function(idx) {
+    $('#loading_text').show();
+
+    $.getJSON('api/getPtTimeProfile?dataset='+params.dataset+'&idx='+idx, function(data) {
+      if (data) {
+        console.log(data['time_intervals']);
+        timeProfile.drawChart(data['time_intervals']);
+        $('#time_chart').show();
+      }
+      $('#loading_text').hide();
+    });
   };
 
   gl.rotateWorldXY = function(x, y, dx, dy) {

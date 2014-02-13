@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+from datetime import date
 import logging
 import sqlite3
 import math
 import msgpack
+import numpy
 import array
 import time
 import json
@@ -12,10 +14,10 @@ import os
 from flask import Flask, jsonify, Response, render_template, request
 app = Flask(__name__)
 
-pointsFields = ['x','y','z','r','g','b','tmin','tmax', 'idx']
+pointsFields = ['x','y','z','r','g','b','tmin','tmax','idx']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
-available_dataset = ['times-square-v7']
+available_dataset = ['times-square-v7', '5pointz6']
 default_dataset = available_dataset[0]
 
 class Timer:
@@ -44,6 +46,32 @@ def rowsToBytes(rows):
   data = [col for cols in rows for col in cols]
   bytes = array.array('f', data)
   return bytes.tostring()
+
+def prepareTimeIntervals(idx, rows):
+  data_str = ''
+  for r in rows:
+    data_str = r[0]
+    break
+  data = numpy.fromstring(data_str, dtype=numpy.float32).reshape((-1,2))
+  times = {
+    'cols': [
+      { 'id':'', 'label':'PointID', 'pattern':'', 'type':'string' },
+      { 'id':'', 'label':'Start', 'pattern':'', 'type':'date' },
+      { 'id':'', 'label':'End', 'pattern':'', 'type':'date' }
+    ],
+    'rows': []
+  }
+  for d in data:
+    start_d = date.fromtimestamp(d[0])
+    end_d = date.fromtimestamp(d[1])
+    start = 'Date(%s)' % str(start_d).replace('-',', ')
+    end = 'Date(%s)' % str(end_d).replace('-',', ')
+    times['rows'].append({
+      'c':[
+        {'v':str(idx), 'f':None}, {'v':start, 'f':None}, {'v':end, 'f':None}
+      ]
+    })
+  return times
 
 @app.route('/api/getCamera')
 def getCamera():
@@ -146,6 +174,26 @@ def getPtJson():
   finally:
     conn.close()
 
+@app.route('/api/getPtTimeProfile')
+def getPtTimeProfile():
+  idx = request.args.get('idx', 0, type=int)
+  dataset = request.args.get('dataset', default_dataset, type=str)
+  if dataset not in available_dataset:
+    dataset = default_dataset
+  conn = sqlite3.connect(dataset+'.db')
+
+  try:
+    c = conn.cursor()
+    rows = c.execute('select interval_str from time_intervals where point_idx = '+str(idx))
+    with Timer() as t:
+      times = prepareTimeIntervals(idx, rows)
+
+    return jsonify({
+      'time_intervals': times
+    })
+  finally:
+    conn.close()
+
 @app.route('/api/getPtFromRowId')
 def getPtFromRowId():
   rowid = request.args.get('rowid', 0, type=int)
@@ -158,7 +206,10 @@ def getPtFromRowId():
     c = conn.cursor()
     rows = c.execute('select '+','.join(pointsFields)+' from points where rowid = '+str(rowid))
     pts = [pointToJson(row) for row in rows]
-    return jsonify({'points':pts})
+
+    return jsonify({
+      'points': pts,
+    })
   finally:
     conn.close()
 
