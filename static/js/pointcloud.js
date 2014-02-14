@@ -4,6 +4,7 @@ Number.prototype.padLeft = function (n,str){
 
 $(function() {
   $('#current_time').css('left', ($(window).width()/2-50)+'px');
+  $('#photo_strip').css('width', $(window).width()-10+'px');
 
   var timeProfile = null;
   google.setOnLoadCallback(function() {
@@ -14,7 +15,9 @@ $(function() {
   $(window).resize(function() {
     gl_invalidate = true;
     timeProfile.redraw();
-    $('#current_time').css('left', ($(window).width()/2-50)+'px');
+    var width = $(window).width();
+    $('#photo_strip').css('width', width-10+'px');
+    $('#current_time').css('left', (width/2-50)+'px');
   });
 
   // proceed with WebGL
@@ -48,7 +51,7 @@ $(function() {
     };
     this.dataset = '';
     this.photoStrip = false;
-    this.currPointId = 0;
+    this.currPointId = -1;
   };
   var params = new Parameters();
   params.dataset = $('#dataset').text();
@@ -81,7 +84,7 @@ $(function() {
   viewsFolder.add(params, 'photoStrip')
     .onChange(function(val) {
       var photoStripBottom = val ? 0:-130; 
-      $('#photo_strip').css('bottom', photoStripBottom+'px');
+      $('#photo_strip_container').css('bottom', photoStripBottom+'px');
       $('#dat_gui_container').css('bottom', photoStripBottom + 150 + 'px');
       $('#point_meta').css('bottom', photoStripBottom + 130 + 'px');
       $('#current_time').css('bottom', photoStripBottom + 150 + 'px');
@@ -94,9 +97,34 @@ $(function() {
           paddingBottom: photoStripBottom + 130
         });
         gl_invalidate = true;
-      }, val?300:0);
+      }, val?200:0);
+      if (val) {
+        getPointPhotos();
+      }
     });
   viewsFolder.open();
+
+  var getPointPhotos = function() {
+    if (params.currPointId == -1) {
+      return;
+    }
+    console.log(params.currPointId);
+
+    // fetch photo urls
+    var photoUrls = ['test1', 'test2'];
+    var photoStripContainer = $('#photo_strip ul');
+    photoStripContainer.empty();
+    $('#photo_strip ul').css('width', '3120px');
+
+    // populate the photos
+    //for (var i = 0; i < photoUrls.length; ++i) {
+    for (var i = 0; i < 20; ++i) {
+      var url = 'http://farm8.staticflickr.com/7350/12504958043_0e45727769_m.jpg';
+      photoStripContainer.append(
+          $('<li style="background-image:url('+url+')"></li>'));
+    }
+
+  };
 
   var unixTimeToHumanDate = function(timestamp) {
     var date = new Date(timestamp * 1000),
@@ -241,6 +269,9 @@ $(function() {
         }
       }
     });
+    if (params.photoStrip) {
+      getPointPhotos();
+    }
     gl_invalidate = true;
     gl.ondraw();
   };
@@ -567,8 +598,8 @@ $(function() {
     $('#current_time').text(unixTimeToHumanDate(params.time));
     // setup gui control
     var timesFolder = gui.addFolder('Times');
-    var timeControl = timesFolder.add(params, 'time', data.tmin, data.tmax)
-    timeControl.onChange(function(val) {
+    timesFolder.add(params, 'time', data.tmin, data.tmax)
+      .onChange(function(val) {
       $('#current_time').text(unixTimeToHumanDate(params.time));
       gl_invalidate = true;
     });
