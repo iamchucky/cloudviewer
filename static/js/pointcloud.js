@@ -254,7 +254,9 @@ $(function() {
 
   gl.ondblclick = function(e) {
     renderPointIdMap();
-    var pointId = samplePointIdMap(e.x, e.y, gl.canvas.width, gl.canvas.height);
+    var x = e.x | e.clientX;
+    var y = e.y | e.clientY;
+    var pointId = samplePointIdMap(x, y, gl.canvas.width, gl.canvas.height);
     if (pointId == 0) {
       gl_invalidate = true;
       gl.ondraw();
@@ -467,18 +469,19 @@ $(function() {
   };
 
   gl.onmousescroll = function (e) {
+    var wheelDelta = e.wheelDeltaY | e.wheelDelta | e.detail*-1;
     if (e.altKey) {
-      if (e.wheelDeltaY > 0) {
+      if (wheelDelta > 0) {
         params.pointSize *= 2.0;
-      } else if (e.wheelDeltaY < 0) {
+      } else if (wheelDelta < 0) {
         params.pointSize /= 2.0;
       }
       params.pointSize = Math.min(512.0, Math.max(1.0, params.pointSize));
       guiPointSize.updateDisplay();
     } else {
-      if (e.wheelDeltaY > 0) {
+      if (wheelDelta > 0) {
         params.zoom /= 2.0;
-      } else if (e.wheelDeltaY < 0) {
+      } else if (wheelDelta < 0) {
         params.zoom *= 2.0;
       }
       params.zoom = Math.min(2048.0, Math.max(1.0, params.zoom));
