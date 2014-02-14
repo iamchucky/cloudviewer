@@ -3,10 +3,18 @@ Number.prototype.padLeft = function (n,str){
 };
 
 $(function() {
+  $('#current_time').css('left', ($(window).width()/2-50)+'px');
 
   var timeProfile = null;
   google.setOnLoadCallback(function() {
     timeProfile = new TimeProfile();
+  });
+  var gl_invalidate = true;
+  var enable_gl_invalidate = true;
+  $(window).resize(function() {
+    gl_invalidate = true;
+    timeProfile.redraw();
+    $('#current_time').css('left', ($(window).width()/2-50)+'px');
   });
 
   // proceed with WebGL
@@ -19,8 +27,6 @@ $(function() {
     canvas: document.getElementById('canvas')
   });
   var trackball = new Trackball();
-  var gl_invalidate = true;
-  var enable_gl_invalidate = true;
 
   // Define parameters
   var Parameters = function() {
@@ -46,7 +52,9 @@ $(function() {
   params.dataset = $('#dataset').text();
 
   // define the DAT.GUI
-  var gui = new dat.GUI();
+  var gui = new dat.GUI({ autoPlace: false });
+  document.getElementById('dat_gui_container').appendChild(gui.domElement);
+
   var viewsFolder = gui.addFolder('Views');
   viewsFolder.add(params, 'length', 0.5, 2500.0).step(0.5).listen()
     .onChange(function(val) {
