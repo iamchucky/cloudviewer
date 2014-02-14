@@ -33,7 +33,7 @@ $(function() {
 
   // Define parameters
   var Parameters = function() {
-    this.length = 10.0;
+    this.zoom = 10.0;
     this.time = 0;
     this.cameraTime = 0;
     this.cameraWindow = 0;
@@ -41,7 +41,7 @@ $(function() {
     this.center = new GL.Vector(0, 0, 0);
     this.near = 0.5;
     this.far = 2500.0;
-    this.pointSize = 512.0;
+    this.pointSize = 1.0;
     this.camCount = 0;
     this.ptCount = 0;
     this.chunkCount = 0;
@@ -50,7 +50,7 @@ $(function() {
       trackball.invRotation = params.rotation.inverse();
     };
     this.dataset = '';
-    this.photoStrip = false;
+    this.showPhotoStrip = false;
     this.currPointId = -1;
   };
   var params = new Parameters();
@@ -61,7 +61,7 @@ $(function() {
   document.getElementById('dat_gui_container').appendChild(gui.domElement);
 
   var viewsFolder = gui.addFolder('Views');
-  viewsFolder.add(params, 'length', 0.5, 2500.0).step(0.5).listen()
+  var guiZoom = viewsFolder.add(params, 'zoom', 1.0, 2048.0)
     .onChange(function(val) {
       gl_invalidate = true;
     });
@@ -73,7 +73,7 @@ $(function() {
     gl.setNearFar(params.near, params.far);
     gl_invalidate = true;
   });
-  viewsFolder.add(params, 'pointSize', 1.0, 512.0*16.0).step(1.0).listen()
+  var guiPointSize = viewsFolder.add(params, 'pointSize', 1.0, 512.0)
     .onChange(function(val) {
       gl_invalidate = true;
     });
@@ -81,7 +81,7 @@ $(function() {
     .onChange(function(val) {
       gl_invalidate = true;
     });
-  viewsFolder.add(params, 'photoStrip')
+  viewsFolder.add(params, 'showPhotoStrip')
     .onChange(function(val) {
       var photoStripBottom = val ? 0:-130; 
       $('#photo_strip_container').css('bottom', photoStripBottom+'px');
@@ -114,11 +114,12 @@ $(function() {
     var photoUrls = ['test1', 'test2'];
     var photoStripContainer = $('#photo_strip ul');
     photoStripContainer.empty();
-    $('#photo_strip ul').css('width', '3120px');
+    var photoCount = 15;
+    $('#photo_strip ul').css('width', photoCount*206+'px');
 
     // populate the photos
     //for (var i = 0; i < photoUrls.length; ++i) {
-    for (var i = 0; i < 20; ++i) {
+    for (var i = 0; i < photoCount; ++i) {
       var url = 'http://farm8.staticflickr.com/7350/12504958043_0e45727769_m.jpg';
       photoStripContainer.append(
           $('<li style="background-image:url('+url+')"></li>'));
@@ -269,7 +270,7 @@ $(function() {
         }
       }
     });
-    if (params.photoStrip) {
+    if (params.showPhotoStrip) {
       getPointPhotos();
     }
     gl_invalidate = true;
@@ -281,6 +282,7 @@ $(function() {
       if (data) {
         if (timeProfile && data['time_intervals']) {
           timeProfile.drawChart(data['time_intervals'], data['num']);
+          $('#loading_text').css('top', '70px');
         }
       }
     });
@@ -330,7 +332,7 @@ $(function() {
   // Code from MeshLab source at 
   // https://github.com/kylemcdonald/ofxVCGLib/blob/master/vcglib/wrap/gui/trackutils.h
   var hitSphere = function(x, y) {
-    var radius = params.length / 10 * 2.5;
+    var radius = params.zoom / 10 * 2.5;
     var center = params.center;
     var tracer = new GL.Raytracer();
     var ray = tracer.getRayForPixel(x, y);
@@ -449,7 +451,9 @@ $(function() {
         } else {
           $('#canvas').css('cursor', '-webkit-zoom-out');
         }
-        params.length += 150.0 * e.deltaY / gl.canvas.height;
+        params.zoom += 150.0 * e.deltaY / gl.canvas.height;
+        params.zoom = Math.min(2048.0, Math.max(1.0, params.zoom));
+        guiZoom.updateDisplay();
       } else {
         // sphere mode
         $('#canvas').css('cursor', '-webkit-grabbing');
@@ -466,14 +470,16 @@ $(function() {
       } else if (e.wheelDeltaY < 0) {
         params.pointSize /= 2.0;
       }
-      params.pointSize = Math.min(512.0*16.0, Math.max(1.0, params.pointSize));
+      params.pointSize = Math.min(512.0, Math.max(1.0, params.pointSize));
+      guiPointSize.updateDisplay();
     } else {
       if (e.wheelDeltaY > 0) {
-        params.length /= 2.0;
+        params.zoom /= 2.0;
       } else if (e.wheelDeltaY < 0) {
-        params.length *= 2.0;
+        params.zoom *= 2.0;
       }
-      params.length = Math.max(0.5, params.length);
+      params.zoom = Math.min(2048.0, Math.max(1.0, params.zoom));
+      guiZoom.updateDisplay();
     }
     gl_invalidate = true;
   }
@@ -484,9 +490,10 @@ $(function() {
     // Forward movement
     var up = GL.keys.UP | 0;
     var down = GL.keys.DOWN | 0;
-    params.length += speed * (down - up);
-    params.length = Math.max(0.0, params.length);
     if (up || down) {
+      params.zoom += speed * (down - up);
+      params.zoom = Math.min(2048.0, Math.max(1.0, params.zoom));
+      guiZoom.updateDisplay();
       gl_invalidate = true;
     }
 
@@ -524,7 +531,7 @@ $(function() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
     gl.matrixMode(gl.MODELVIEW);
-    gl.translate(0, 0, -params.length);
+    gl.translate(0, 0, -params.zoom);
     gl.multMatrix(params.rotation);
     gl.translate(-params.center.x, -params.center.y, -params.center.z);
     renderScene(particleShader);

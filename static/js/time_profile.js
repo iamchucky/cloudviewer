@@ -8,6 +8,7 @@ var TimeProfile = function() {
     timeline: { 
       groupByRowLabel: true,
       singleColor: '#2fa1d6',
+      showRowLabels: false,
       barLabelStyle: { fontSize: 5 },
       rowLabelStyle: { fontSize: 8, color: 'white' }
     }

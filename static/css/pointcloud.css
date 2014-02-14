@@ -53,6 +53,7 @@ body {
   color: white;
   top: 10px;
   left: 10px;
+  text-shadow: 0 0 5px black;
 }
 
 #time_chart {
@@ -117,7 +118,7 @@ body {
   background-size: cover;
   background-position: 50% 25%;
   display: block;
-  width: 150px;
+  width: 200px;
   height: 100px;
   float: left;
   margin: 0 3px;
