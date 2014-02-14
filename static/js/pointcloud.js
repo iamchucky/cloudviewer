@@ -35,8 +35,6 @@ $(function() {
   var Parameters = function() {
     this.zoom = 10.0;
     this.time = 0;
-    this.cameraTime = 0;
-    this.cameraWindow = 0;
     this.rotation = GL.Matrix.identity();
     this.center = new GL.Vector(0, 0, 0);
     this.near = 0.5;
@@ -60,6 +58,7 @@ $(function() {
   var gui = new dat.GUI({ autoPlace: false });
   document.getElementById('dat_gui_container').appendChild(gui.domElement);
 
+  var timesFolder = gui.addFolder('Times');
   var viewsFolder = gui.addFolder('Views');
   var guiZoom = viewsFolder.add(params, 'zoom', 1.0, 2048.0)
     .onChange(function(val) {
@@ -604,20 +603,11 @@ $(function() {
 
     $('#current_time').text(unixTimeToHumanDate(params.time));
     // setup gui control
-    var timesFolder = gui.addFolder('Times');
     timesFolder.add(params, 'time', data.tmin, data.tmax)
       .onChange(function(val) {
       $('#current_time').text(unixTimeToHumanDate(params.time));
       gl_invalidate = true;
     });
-    timesFolder.add(params, 'cameraTime', data.tmin, data.tmax)
-      .onChange(function(val) {
-        gl_invalidate = true;
-      });
-    timesFolder.add(params, 'cameraWindow', 0, data.tmax-data.tmin)
-      .onChange(function(val) {
-        gl_invalidate = true;
-      });
     timesFolder.open();
 
     if (data.sources) {
