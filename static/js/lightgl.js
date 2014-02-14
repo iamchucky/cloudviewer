@@ -439,7 +439,7 @@ function addOtherMethods() {
     gl.canvas.style.position = 'absolute';
     gl.canvas.style.left = left + 'px';
     gl.canvas.style.top = top + 'px';
-    function resize() {
+    var resize = function() {
       gl.canvas.width = window.innerWidth - left - right;
       gl.canvas.height = window.innerHeight - top - bottom;
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -455,8 +455,12 @@ function addOtherMethods() {
       }
       if (gl.ondraw) gl.ondraw();
     }
+    if (gl.resize) {
+      off(window, 'resize', gl.resize);
+    }
     on(window, 'resize', resize);
     resize();
+    gl.resize = resize;
   };
 
   gl.setNearFar = function(near, far) {

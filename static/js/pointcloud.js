@@ -47,6 +47,8 @@ $(function() {
       trackball.invRotation = params.rotation.inverse();
     };
     this.dataset = '';
+    this.photoStrip = false;
+    this.currPointId = 0;
   };
   var params = new Parameters();
   params.dataset = $('#dataset').text();
@@ -75,6 +77,24 @@ $(function() {
   viewsFolder.add(params, 'resetTrackball')
     .onChange(function(val) {
       gl_invalidate = true;
+    });
+  viewsFolder.add(params, 'photoStrip')
+    .onChange(function(val) {
+      var photoStripBottom = val ? 0:-130; 
+      $('#photo_strip').css('bottom', photoStripBottom+'px');
+      $('#dat_gui_container').css('bottom', photoStripBottom + 150 + 'px');
+      $('#point_meta').css('bottom', photoStripBottom + 130 + 'px');
+      $('#current_time').css('bottom', photoStripBottom + 150 + 'px');
+      setTimeout(function() {
+        gl.fullscreen({
+          providedCanvas: true, 
+          near: params.near, 
+          far: params.far, 
+          fov: 45,
+          paddingBottom: photoStripBottom + 130
+        });
+        gl_invalidate = true;
+      }, val?300:0);
     });
   viewsFolder.open();
 
@@ -208,6 +228,7 @@ $(function() {
       gl.ondraw();
       return;
     }
+    params.currPointId = pointId;
     $.getJSON('api/getPtFromRowId?dataset='+params.dataset+'&rowid='+pointId, function(data) {
       if (data) {
         var pointData = data['points'][0];
