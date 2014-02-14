@@ -120,8 +120,12 @@ $(function() {
     //for (var i = 0; i < photoUrls.length; ++i) {
     for (var i = 0; i < photoCount; ++i) {
       var url = 'http://farm8.staticflickr.com/7350/12504958043_0e45727769_m.jpg';
-      photoStripContainer.append(
-          $('<li style="background-image:url('+url+')"></li>'));
+      var fullUrl = 'http://farm8.staticflickr.com/7350/12504958043_0e45727769_c.jpg';
+      var elem = $('<li url="'+fullUrl+'" style="background-image:url('+url+')"></li>')
+        .click(function() {
+          window.open($(this).attr('url'));
+        });
+      photoStripContainer.append(elem);
     }
 
   };
