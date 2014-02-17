@@ -31,9 +31,16 @@ $(function() {
   });
   var trackball = new Trackball();
 
+  var stats = new Stats();
+  stats.domElement.style.position = 'absolute';
+  stats.domElement.style.left = '0px';
+  stats.domElement.style.top = '0px';
+
+  document.body.appendChild( stats.domElement );
+
   // Define parameters
   var Parameters = function() {
-    this.zoom = 10.0;
+    this.cameraZ = 10.0;
     this.time = 0;
     this.rotation = GL.Matrix.identity();
     this.center = new GL.Vector(0, 0, 0);
@@ -50,6 +57,7 @@ $(function() {
     this.dataset = '';
     this.showPhotoStrip = false;
     this.currPointId = -1;
+    this.showFps = true;
   };
   var params = new Parameters();
   params.dataset = $('#dataset').text();
@@ -60,7 +68,8 @@ $(function() {
 
   var timesFolder = gui.addFolder('Times');
   var viewsFolder = gui.addFolder('Views');
-  var guiZoom = viewsFolder.add(params, 'zoom', 1.0, 2048.0)
+  var guiZoom = viewsFolder.add(params, 'cameraZ', 1.0, 2048.0)
+    .name('camera z')
     .onChange(function(val) {
       gl_invalidate = true;
     });
@@ -73,14 +82,17 @@ $(function() {
     gl_invalidate = true;
   });
   var guiPointSize = viewsFolder.add(params, 'pointSize', 1.0, 512.0)
+    .name('point size')
     .onChange(function(val) {
       gl_invalidate = true;
     });
   viewsFolder.add(params, 'resetTrackball')
+    .name('reset trackball')
     .onChange(function(val) {
       gl_invalidate = true;
     });
   viewsFolder.add(params, 'showPhotoStrip')
+    .name('show photostrip')
     .onChange(function(val) {
       var photoStripBottom = val ? 0:-130; 
       $('#photo_strip_container').css('bottom', photoStripBottom+'px');
@@ -99,6 +111,15 @@ $(function() {
       }, val?200:0);
       if (val) {
         getPointPhotos();
+      }
+    });
+  viewsFolder.add(params, 'showFps')
+    .name('show fps')
+    .onFinishChange(function(val) {
+      if (val) {
+        $('#stats').show();
+      } else {
+        $('#stats').hide();
       }
     });
   viewsFolder.open();
@@ -337,7 +358,7 @@ $(function() {
   // Code from MeshLab source at 
   // https://github.com/kylemcdonald/ofxVCGLib/blob/master/vcglib/wrap/gui/trackutils.h
   var hitSphere = function(x, y) {
-    var radius = params.zoom / 10 * 2.5;
+    var radius = params.cameraZ / 10 * 2.5;
     var center = params.center;
     var tracer = new GL.Raytracer();
     var ray = tracer.getRayForPixel(x, y);
@@ -456,8 +477,8 @@ $(function() {
         } else {
           $('#canvas').css('cursor', '-webkit-zoom-out');
         }
-        params.zoom += 150.0 * e.deltaY / gl.canvas.height;
-        params.zoom = Math.min(2048.0, Math.max(1.0, params.zoom));
+        params.cameraZ += 150.0 * e.deltaY / gl.canvas.height;
+        params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
         guiZoom.updateDisplay();
       } else {
         // sphere mode
@@ -480,11 +501,11 @@ $(function() {
       guiPointSize.updateDisplay();
     } else {
       if (wheelDelta > 0) {
-        params.zoom /= 2.0;
+        params.cameraZ /= 2.0;
       } else if (wheelDelta < 0) {
-        params.zoom *= 2.0;
+        params.cameraZ *= 2.0;
       }
-      params.zoom = Math.min(2048.0, Math.max(1.0, params.zoom));
+      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
       guiZoom.updateDisplay();
     }
     gl_invalidate = true;
@@ -497,8 +518,8 @@ $(function() {
     var up = GL.keys.UP | 0;
     var down = GL.keys.DOWN | 0;
     if (up || down) {
-      params.zoom += speed * (down - up);
-      params.zoom = Math.min(2048.0, Math.max(1.0, params.zoom));
+      params.cameraZ += speed * (down - up);
+      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
       guiZoom.updateDisplay();
       gl_invalidate = true;
     }
@@ -528,6 +549,7 @@ $(function() {
   }
 
   gl.ondraw = function() {
+    stats.update();
     // be sure to set gl_invalidate to true to redraw
     if (enable_gl_invalidate && !gl_invalidate) {
       return;
@@ -537,7 +559,7 @@ $(function() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.loadIdentity();
     gl.matrixMode(gl.MODELVIEW);
-    gl.translate(0, 0, -params.zoom);
+    gl.translate(0, 0, -params.cameraZ);
     gl.multMatrix(params.rotation);
     gl.translate(-params.center.x, -params.center.y, -params.center.z);
     renderScene(particleShader);
@@ -611,6 +633,7 @@ $(function() {
     $('#current_time').text(unixTimeToHumanDate(params.time));
     // setup gui control
     timesFolder.add(params, 'time', data.tmin, data.tmax)
+      .name('current time')
       .onChange(function(val) {
       $('#current_time').text(unixTimeToHumanDate(params.time));
       gl_invalidate = true;
