@@ -71,6 +71,13 @@ body {
   stroke-width: 0;
 }
 
+#dat_gui_container_time {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+}
+
 #dat_gui_container {
   position: absolute;
   bottom: 20px;

@@ -64,6 +64,8 @@ $(function() {
   params.dataset = $('#dataset').text();
 
   // define the DAT.GUI
+  var timeGui = new dat.GUI({ autoPlace: false });
+  document.getElementById('dat_gui_container_time').appendChild(timeGui.domElement);
   var gui = new dat.GUI({ autoPlace: false });
   document.getElementById('dat_gui_container').appendChild(gui.domElement);
 
@@ -653,6 +655,12 @@ $(function() {
 
     $('#current_time').text(unixTimeToHumanDate(params.time));
     // setup gui control
+    timeGui.add(params, 'time', data.tmin, data.tmax)
+      .name('current time')
+      .onChange(function(val) {
+      $('#current_time').text(unixTimeToHumanDate(params.time));
+      gl_invalidate = true;
+    });
     timesFolder.add(params, 'time', data.tmin, data.tmax)
       .name('current time')
       .onChange(function(val) {
