@@ -58,6 +58,7 @@ $(function() {
     this.showPhotoStrip = false;
     this.currPointId = -1;
     this.showFps = true;
+    this.roundPoints = false;
   };
   var params = new Parameters();
   params.dataset = $('#dataset').text();
@@ -83,6 +84,10 @@ $(function() {
   });
   var guiPointSize = viewsFolder.add(params, 'pointSize', 1.0, 512.0)
     .name('point size')
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
+  viewsFolder.add(params,'roundPoints').name('rounded points')
     .onChange(function(val) {
       gl_invalidate = true;
     });
@@ -202,29 +207,35 @@ $(function() {
     uniform float sources[10];\
     uniform float time;\
     uniform float size;\
+    uniform float round;\
     varying vec4 color;\
+    varying float rounded_points;\
     void main() {\
       if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-        gl_PointSize = min(16.0, max(2.0, size / -cameraSpace.z));\
+        gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
         float idx0 = floor(idx/16777216.0)/255.0;\
         float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;\
         float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;\
         float idx3 = mod(idx, 256.0)/255.0;\
         color = vec4(idx0, idx1, idx2, idx3);\
+        rounded_points = round;\
       } else {\
         gl_PointSize = 0.0;\
       }\
     }\
     ', '\
     varying vec4 color;\
+    varying float rounded_points;\
     void main() {\
-      vec2 m = vec2(2.0*(gl_PointCoord.x - 0.5), 2.0*(gl_PointCoord.y - 0.5));\
-      float a = m.x * m.x;\
-      float b = m.y * m.y;\
-      if (1.0-a-b < 0.0) {\
-        discard;\
+      if (rounded_points == 1.0) {\
+        vec2 m = vec2(2.0*(gl_PointCoord.x - 0.5), 2.0*(gl_PointCoord.y - 0.5));\
+        float a = m.x * m.x;\
+        float b = m.y * m.y;\
+        if (1.0-a-b < 0.0) {\
+          discard;\
+        }\
       }\
       gl_FragColor = color;\
     }\
@@ -249,25 +260,31 @@ $(function() {
     uniform float far;\
     uniform float near;\
     uniform float size;\
+    uniform float round;\
     varying vec4 color;\
+    varying float rounded_points;\
     void main() {\
       if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-        gl_PointSize = min(16.0, max(2.0, size / -cameraSpace.z));\
+        gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
         color = gl_Color;\
+        rounded_points = round;\
       } else {\
         gl_PointSize = 0.0;\
       }\
     }\
     ', '\
     varying vec4 color;\
+    varying float rounded_points;\
     void main() {\
-      vec2 m = vec2(2.0*(gl_PointCoord.x - 0.5), 2.0*(gl_PointCoord.y - 0.5));\
-      float a = m.x * m.x;\
-      float b = m.y * m.y;\
-      if (1.0-a-b < 0.0) {\
-        discard;\
+      if (rounded_points == 1.0) {\
+        vec2 m = vec2(2.0*(gl_PointCoord.x - 0.5), 2.0*(gl_PointCoord.y - 0.5));\
+        float a = m.x * m.x;\
+        float b = m.y * m.y;\
+        if (1.0-a-b < 0.0) {\
+          discard;\
+        }\
       }\
       gl_FragColor = color;\
     }\
@@ -549,7 +566,9 @@ $(function() {
   }
 
   gl.ondraw = function() {
-    stats.update();
+    if (params.showFps) {
+      stats.update();
+    }
     // be sure to set gl_invalidate to true to redraw
     if (enable_gl_invalidate && !gl_invalidate) {
       return;
@@ -586,6 +605,7 @@ $(function() {
     }
     for (var i = 0; i < particleSystem.length; i++) {
       shader.uniforms({ 
+        round: params.roundPoints ? 1.0 : 0.0,
         size: params.pointSize,
         near: params.near, 
         far: params.far, 
