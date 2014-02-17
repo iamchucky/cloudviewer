@@ -33,7 +33,7 @@ $(function() {
 
   var stats = new Stats();
   stats.domElement.style.position = 'absolute';
-  stats.domElement.style.left = '0px';
+  stats.domElement.style.right = '0px';
   stats.domElement.style.top = '0px';
 
   document.body.appendChild( stats.domElement );
@@ -326,6 +326,7 @@ $(function() {
         if (timeProfile && data['time_intervals']) {
           timeProfile.drawChart(data['time_intervals'], data['num']);
           $('#loading_text').css('top', '70px');
+          $('#stats').css('top','70px');
         }
       }
     });
