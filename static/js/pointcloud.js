@@ -7,7 +7,7 @@ $(function() {
 
   var timeProfile = null;
   google.setOnLoadCallback(function() {
-    timeProfile = new TimeProfile();
+    timeProfile = new TimeProfile('time_chart');
   });
   var gl_invalidate = true;
   var enable_gl_invalidate = true;
@@ -155,15 +155,6 @@ $(function() {
 
   };
 
-  var unixTimeToHumanDate = function(timestamp) {
-    var date = new Date(timestamp * 1000),
-        dateVals = [
-          date.getFullYear(),
-          (date.getMonth()+1).padLeft(2),
-          date.getDate().padLeft(2)];
-    return dateVals.join('/');
-  };
-
   var fillPointMeta = function(data) {
     for (var d in data) {
       var val = 0;
@@ -172,7 +163,7 @@ $(function() {
       } else if (d == 'x' || d == 'y' || d == 'z') {
         val = data[d].toFixed(3);
       } else if (d == 'tmin' || d == 'tmax') {
-        val = unixTimeToHumanDate(data[d]);
+        val = unixTimeToHumanDateStr(data[d]);
       }
       $('#point_meta_' + d).html(
           '<div style="width:100%">'+
@@ -323,7 +314,7 @@ $(function() {
     $.getJSON('api/getPtTimeProfile?dataset='+params.dataset+'&idx='+idx, function(data) {
       if (data) {
         if (timeProfile && data['time_intervals']) {
-          timeProfile.drawChart(data['time_intervals'], data['num']);
+          timeProfile.drawChart(data['time_intervals'], data['num'], params.tmax, params.tmin);
           $('#loading_text').css('top', '70px');
           $('#stats').css('top','70px');
         }
@@ -653,7 +644,7 @@ $(function() {
         return;
       }
       params.time += 24*3600.0;
-      $('#current_time').text(unixTimeToHumanDate(params.time));
+      $('#current_time').text(unixTimeToHumanDateStr(params.time));
       $('#time_seekbar').val(params.time);
       gl_invalidate = true;
     }, 50);
@@ -676,19 +667,21 @@ $(function() {
   // get the time range
   $.getJSON('api/getInfo?dataset='+params.dataset, function(data) {
     params.time = (data.tmin + data.tmax) / 2;
+    params.tmax = data.tmax;
+    params.tmin = data.tmin;
     params.camCount = 0;//data.camCount;
     params.ptCount = data.ptCount;
     params.chunkCount = data.chunkCount;
     params.chunkSize = data.chunkSize;
 
     // setup gui control
-    $('#current_time').text(unixTimeToHumanDate(params.time));
+    $('#current_time').text(unixTimeToHumanDateStr(params.time));
     $('#time_seekbar')
       .attr('max', data.tmax)
       .attr('min', data.tmin)
       .change(function(e) {
         params.time = parseFloat($(this).val());
-        $('#current_time').text(unixTimeToHumanDate(params.time));
+        $('#current_time').text(unixTimeToHumanDateStr(params.time));
         gl_invalidate = true;
       })
       .val(params.time);
@@ -706,10 +699,6 @@ $(function() {
     // now get all the cameras then points
     fetchCameras(0, fetchParticles, [0, function() {
       $('#loading_text').hide();
-      if (timelapseHandle) {
-        clearInterval(timelapseHandle);
-      }
-      timelapseHandle = startTimelapse();
     }]);
   });
 

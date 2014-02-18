@@ -47,7 +47,7 @@ def rowsToBytes(rows):
   bytes = array.array('f', data)
   return bytes.tostring()
 
-def prepareTimeIntervals(rows):
+def prepareTimeIntervals(rows, tmax, tmin):
   data_str = ''
   times = {
     'cols': [
@@ -64,6 +64,8 @@ def prepareTimeIntervals(rows):
     data_str = r[1]
     data = numpy.fromstring(data_str, dtype=numpy.float32).reshape((-1,2))
     for d in data:
+      if d[0] < tmin or d[1] < tmin or d[0] > tmax or d[1] > tmax:
+        continue
       start_d = date.fromtimestamp(d[0])
       end_d = date.fromtimestamp(d[1])
       start = 'Date(%s)' % str(start_d).replace('-',', ')
@@ -196,6 +198,9 @@ def getPtTimeProfile():
   dataset = request.args.get('dataset', default_dataset, type=str)
   if dataset not in available_dataset:
     dataset = default_dataset
+
+  with open(dataset + '.db_info', 'r') as rf:
+    info = json.load(rf)
   conn = sqlite3.connect(dataset+'.db')
 
   try:
@@ -204,7 +209,7 @@ def getPtTimeProfile():
     num_rows = 0
     if dataset != default_dataset:
       rows = c.execute('select point_idx,interval_str from time_intervals where point_idx = '+str(idx))
-      times, num_rows = prepareTimeIntervals(rows)
+      times, num_rows = prepareTimeIntervals(rows, info['tmax'], info['tmin'])
 
     return jsonify({'time_intervals': times, 'num': num_rows})
   finally:
