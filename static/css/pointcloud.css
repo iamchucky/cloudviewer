@@ -135,6 +135,13 @@ body {
   right: 10px;
   transition: bottom 0.2s;
 }
+#dat_gui_container > div > ul {
+  position: relative;
+  top: 20px;
+}
+#dat_gui_container > div > div {
+  top: 0px;
+}
 
 #photo_strip {
   width: 100%;

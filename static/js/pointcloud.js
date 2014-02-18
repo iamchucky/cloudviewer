@@ -57,6 +57,7 @@ $(function() {
     this.currPointId = -1;
     this.showFps = true;
     this.roundPoints = false;
+    this.showClusterId = false;
   };
   var params = new Parameters();
   params.dataset = $('#dataset').text();
@@ -65,35 +66,48 @@ $(function() {
   var gui = new dat.GUI({ autoPlace: false });
   document.getElementById('dat_gui_container').appendChild(gui.domElement);
 
-  var viewsFolder = gui.addFolder('Views');
-  var guiZoom = viewsFolder.add(params, 'cameraZ', 1.0, 2048.0)
+  var guiZoom = gui.add(params, 'cameraZ', 1.0, 2048.0)
     .name('camera z')
     .onChange(function(val) {
       gl_invalidate = true;
     });
-  viewsFolder.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
+  gui.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
     gl_invalidate = true;
   });
-  viewsFolder.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
+  gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
     gl_invalidate = true;
   });
-  var guiPointSize = viewsFolder.add(params, 'pointSize', 1.0, 512.0)
+  var guiPointSize = gui.add(params, 'pointSize', 1.0, 512.0)
     .name('point size')
     .onChange(function(val) {
       gl_invalidate = true;
     });
-  viewsFolder.add(params,'roundPoints').name('rounded points')
-    .onChange(function(val) {
-      gl_invalidate = true;
-    });
-  viewsFolder.add(params, 'resetTrackball')
+  gui.add(params, 'resetTrackball')
     .name('reset trackball')
     .onChange(function(val) {
       gl_invalidate = true;
     });
-  viewsFolder.add(params, 'showPhotoStrip')
+  gui.add(params, 'showClusterId')
+    .name('color by cluster')
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
+  gui.add(params,'roundPoints').name('rounded points')
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
+  gui.add(params, 'showFps')
+    .name('show fps')
+    .onFinishChange(function(val) {
+      if (val) {
+        $('#stats').show();
+      } else {
+        $('#stats').hide();
+      }
+    });
+  gui.add(params, 'showPhotoStrip')
     .name('show photostrip')
     .onChange(function(val) {
       var photoStripBottom = val ? 0:-130; 
@@ -117,16 +131,6 @@ $(function() {
         getPointPhotos();
       }
     });
-  viewsFolder.add(params, 'showFps')
-    .name('show fps')
-    .onFinishChange(function(val) {
-      if (val) {
-        $('#stats').show();
-      } else {
-        $('#stats').hide();
-      }
-    });
-  viewsFolder.open();
 
   var getPointPhotos = function() {
     if (params.currPointId == -1) {
@@ -192,16 +196,14 @@ $(function() {
   // point id map and shader
   var pointIdShader = new GL.Shader('\
     attribute vec2 t_range;\
-    attribute float source;\
     attribute float idx;\
-    uniform float sources[10];\
     uniform float time;\
     uniform float size;\
     uniform float round;\
     varying vec4 color;\
     varying float rounded_points;\
     void main() {\
-      if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
+      if (t_range[0] <= time && t_range[1] >= time) {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
         gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
@@ -244,21 +246,25 @@ $(function() {
   // regular shader
   var particleShader = new GL.Shader('\
     attribute vec2 t_range;\
-    attribute float source;\
-    uniform float sources[10];\
+    attribute float clusterId;\
     uniform float time;\
     uniform float far;\
     uniform float near;\
     uniform float size;\
     uniform float round;\
+    uniform float cluster;\
     varying vec4 color;\
     varying float rounded_points;\
     void main() {\
-      if (sources[int(source)] > 0.0 && t_range[0] <= time && t_range[1] >= time) {\
+      if (t_range[0] <= time && t_range[1] >= time) {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
         gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
-        color = gl_Color;\
+        if (cluster == 1.0) {\
+          color = vec4(clusterId/255.0, 1.0, 1.0, 1.0);\
+        } else {\
+          color = gl_Color;\
+        }\
         rounded_points = round;\
       } else {\
         gl_PointSize = 0.0;\
@@ -300,8 +306,8 @@ $(function() {
         fillPointMeta(pointData);
         if (timeProfile && data['time_intervals']) {
           timeProfile.drawChart(data['time_intervals'], data['num_rows'], params.tmax, params.tmin);
-          $('#loading_text').css('top', '70px');
-          $('#stats').css('top','70px');
+          $('#loading_text').css('top', '80px');
+          $('#stats').css('top','80px');
         }
       }
     });
@@ -579,20 +585,17 @@ $(function() {
   };
 
   var renderScene = function(shader) {
-    var sources = [];
-    for (var k in params) {
-      if (k.slice(0, 6) == 'source')
-        sources.push(params[k] == true ? 1 : 0);
-    }
+    var uniforms = { 
+          cluster: params.showClusterId ? 1.0 : 0.0,
+          round: params.roundPoints ? 1.0 : 0.0,
+          size: params.pointSize,
+          near: params.near, 
+          far: params.far, 
+          time: params.time 
+    };
     for (var i = 0; i < particleSystem.length; i++) {
-      shader.uniforms({ 
-        round: params.roundPoints ? 1.0 : 0.0,
-        size: params.pointSize,
-        near: params.near, 
-        far: params.far, 
-        time: params.time, 
-        sources: sources })
-      .draw(particleSystem[i], gl.POINTS);
+      shader.uniforms(uniforms)
+        .draw(particleSystem[i], gl.POINTS);
     }
   };
 
@@ -688,16 +691,6 @@ $(function() {
       })
       .val(params.time);
 
-    if (data.sources) {
-      var sourcesFolder = gui.addFolder('Sources');
-      for (var s in data.sources) {
-        params['source'+s] = true
-        sourcesFolder.add(params, 'source'+s).onChange(function(val) {
-          gl_invalidate = true;
-        });
-      }
-    }
-
     // now get all the cameras then points
     fetchCameras(0, fetchParticles, [0, function() {
       $('#loading_text').hide();
@@ -738,20 +731,20 @@ $(function() {
         var posArray = floatArray.subarray(0, 3*chunkSize);
         var colorArray = floatArray.subarray(3*chunkSize, 6*chunkSize);
         var timeArray = floatArray.subarray(6*chunkSize, 8*chunkSize);
-        var sourceArray = floatArray.subarray(8*chunkSize, 9*chunkSize);
+        var clusterIdArray = floatArray.subarray(8*chunkSize, 9*chunkSize);
         var idxArray = floatArray.subarray(9*chunkSize, floatArray.length);
         var posBuffer = createBuffer(posArray, 3);
         var colorBuffer = createBuffer(colorArray, 3);
         var timeBuffer = createBuffer(timeArray, 2);
-        var sourceBuffer = createBuffer(sourceArray, 1);
+        var clusterIdBuffer = createBuffer(clusterIdArray, 1);
         var idxBuffer = createBuffer(idxArray, 1);
         var ps = new GL.Mesh({triangles:false, colors:true});
         ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
         ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
         ps.addVertexBuffer('times', 't_range');
         ps.vertexBuffers['t_range'].buffer = timeBuffer;
-        ps.addVertexBuffer('sources', 'source');
-        ps.vertexBuffers['source'].buffer = sourceBuffer;
+        ps.addVertexBuffer('clusterIds', 'clusterId');
+        ps.vertexBuffers['clusterId'].buffer = clusterIdBuffer;
         ps.addVertexBuffer('idxs', 'idx');
         ps.vertexBuffers['idx'].buffer = idxBuffer;
         particleSystem.push(ps);

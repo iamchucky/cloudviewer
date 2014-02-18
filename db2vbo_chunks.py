@@ -55,14 +55,14 @@ def writeChunk(filename, start, num):
     color_bytes = rowsToBytes(rows)
     rows = c.execute('select tmin,tmax from points limit '+str(start)+','+str(num))
     t_bytes = rowsToBytes(rows)
-    rows = c.execute('select source from points limit '+str(start)+','+str(num))
-    sources = rowsToBytes(rows)
+    rows = c.execute('select clusterid from points limit '+str(start)+','+str(num))
+    clusterids = rowsToBytes(rows)
     # idx based on the row index in the db
     rows = c.execute('select rowid from points limit '+str(start)+','+str(num))
     idxs = rowsToBytes(rows)
 
     with gzip.open(filename, 'wb') as wf:
-      wf.write(pos_bytes+color_bytes+t_bytes+sources+idxs)
+      wf.write(pos_bytes+color_bytes+t_bytes+clusterids+idxs)
   finally:
     conn.close()
 
@@ -91,10 +91,6 @@ def prepareInfo():
     tmax = 0
     for row in rows:
       tmax = row[0]
-    rows = c.execute('select distinct source from points')
-    sources = []
-    for row in rows:
-      sources.append(row)
     rows = c.execute('select count(f) from cameras')
     for row in rows:
       camCount = row[0]
@@ -105,8 +101,7 @@ def prepareInfo():
 
     with open(db + '_info', 'w') as wf:
       json.dump(
-          { 'sources': sources,
-            'tmin': tmin,
+          { 'tmin': tmin,
             'tmax': tmax,
             'camCount': camCount,
             'ptCount': ptCount,

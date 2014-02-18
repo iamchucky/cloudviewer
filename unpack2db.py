@@ -27,7 +27,7 @@ def createDb():
       'nz integer,' +
       'tmin integer not null,' +
       'tmax integer not null,' +
-      'source integer not null,' +
+      'clusterid integer not null,' +
       'interval_str blob not null,' +
       'idx integer not null primary key)')
   conn.execute('create table if not exists cameras(' +
@@ -71,9 +71,9 @@ def migrate():
     time_dict[d[0]] = buffer(d[1])
   print '%d points time_intervals' % len(time_dict)
 # points
-  points = filterNone([x[:6]+x[9:]+[time_dict[x[-1]]] for x in db_data['points']['attributes']])
+  points = filterNone([x[:6]+x[9:11]+x[12:]+[0]+[time_dict[x[-1]]] for x in db_data['points']['attributes']])
   print '%d points' % len(points)
-  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx,interval_str) values (?,?,?,?,?,?,?,?,?,?,?)", points)
+  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,idx,clusterid,interval_str) values (?,?,?,?,?,?,?,?,?,?,?)", points)
   points = None
   db_data['points'] = None
 # commit
