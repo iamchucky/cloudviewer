@@ -1,6 +1,7 @@
 
 body {
   margin-top: 50px;
+  overflow: hidden;
 }
 
 #canvas {
@@ -66,6 +67,9 @@ body {
 
   transition: bottom 0.2s;
 }
+#playback_control:hover {
+  text-shadow: 0 0 5px white;
+}
 
 #time_seekbar {
   position: absolute;
@@ -84,9 +88,22 @@ body {
 #time_seekbar::-webkit-slider-thumb {
   -webkit-appearance: none !important;
   background: white;
-  box-shadow: 0 0 5px black;
-  height: 16px;
-  width: 30px;
+  box-shadow: 0 0 10px black;
+  height: 20px;
+  width: 20px;
+  border-radius: 10px;
+}
+
+#time_tooltip {
+  position: absolute;
+  bottom: -999px;
+  background-color: #1a1a1a;
+  font-weight: bold;
+  padding: 5px 8px;
+  color: white;
+}
+#time_seekbar:hover ~ #time_tooltip {
+  bottom: 75px;
 }
 
 #loading_text {

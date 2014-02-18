@@ -8,8 +8,7 @@ var TimeProfile = function(elementId) {
     height: 70,
     timeline: { 
       groupByRowLabel: true,
-      //singleColor: '#2fa1d6',
-      singleColor: '#555',
+      singleColor: '#2fa1d6',
       showRowLabels: false,
       barLabelStyle: { fontSize: 5 },
       rowLabelStyle: { fontSize: 8, color: 'white' }
@@ -23,11 +22,11 @@ TimeProfile.prototype.drawChart = function(data, rowCount, tmax, tmin) {
     var tmaxDate = 'Date('+unixTimeToHumanDate(tmax).join(', ')+')';
     var tminDate = 'Date('+unixTimeToHumanDate(tmin).join(', ')+')';
     data.rows.push({
-      'c':[{'v':'0', 'f':null}, {'v':tminDate, 'f':null}, {'v':tmaxDate, 'f':null}]
+      'c':[{'v':'extent'}, {'v':tminDate}, {'v':tmaxDate}]
     });
   }
   this.dataTable = new google.visualization.DataTable(data);
-  this.options['height'] = 50+rowCount*20;
+  this.options['height'] = 50+rowCount*18;
   this.chart.draw(this.dataTable, this.options);
 
   $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');

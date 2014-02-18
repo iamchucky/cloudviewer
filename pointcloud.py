@@ -17,7 +17,7 @@ app = Flask(__name__)
 pointsFields = ['x','y','z','r','g','b','tmin','tmax','idx']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
-available_dataset = ['times-square-v7', '5pointz6']
+available_dataset = ['5pointz6']
 default_dataset = available_dataset[0]
 
 class Timer:
@@ -47,7 +47,7 @@ def rowsToBytes(rows):
   bytes = array.array('f', data)
   return bytes.tostring()
 
-def prepareTimeIntervals(rows, tmax, tmin):
+def prepareTimeIntervals(rows, info):
   data_str = ''
   times = {
     'cols': [
@@ -58,10 +58,14 @@ def prepareTimeIntervals(rows, tmax, tmin):
     'rows': []
   }
   num_rows = 0
+  tmax = info['tmax']
+  tmin = info['tmin']
   for r in rows:
     num_rows += 1
     idx = r[0]
-    data_str = r[1]
+    point_tmin = r[1]
+    point_tmax = r[2]
+    data_str = r[3]
     data = numpy.fromstring(data_str, dtype=numpy.float32).reshape((-1,2))
     for d in data:
       if d[0] < tmin or d[1] < tmin or d[0] > tmax or d[1] > tmax:
@@ -70,9 +74,22 @@ def prepareTimeIntervals(rows, tmax, tmin):
       end_d = date.fromtimestamp(d[1])
       start = 'Date(%s)' % str(start_d).replace('-',', ')
       end = 'Date(%s)' % str(end_d).replace('-',', ')
+
+      # json data input 
+      # https://developers.google.com/chart/interactive/docs/reference#dataparam
+      #
+      # col: [{val: <pointid>}, {val: <start>}, {val: <end>}]
       times['rows'].append({
-        'c':[{'v':str(idx), 'f':None}, {'v':start, 'f':None}, {'v':end, 'f':None}]
+        'c':[{'v':str(idx)}, {'v':start}, {'v':end}]
       })
+    start_d = date.fromtimestamp(point_tmin)
+    end_d = date.fromtimestamp(point_tmax)
+    start = 'Date(%s)' % str(start_d).replace('-',', ')
+    end = 'Date(%s)' % str(end_d).replace('-',', ')
+    times['rows'].append({
+      'c':[{'v':'estimated'}, {'v':start}, {'v':end}]
+    })
+    num_rows += 1
   return times, num_rows 
 
 @app.route('/api/getCamera')
@@ -88,33 +105,6 @@ def getCamera():
     rows = c.execute('select '+','.join(camerasFields)+' from cameras limit '+str(start)+','+str(num))
     cameras = [cameraToJson(row) for row in rows]
     return jsonify({'cameras':cameras})
-  finally:
-    conn.close()
-
-@app.route('/api/getPt')
-def getPt():
-  start = request.args.get('start', 0, type=int)
-  num = request.args.get('num', 20, type=int)
-  dataset = request.args.get('dataset', default_dataset, type=str)
-  if dataset not in available_dataset:
-    dataset = default_dataset
-  conn = sqlite3.connect(dataset+'.db')
-
-  try:
-    c = conn.cursor()
-    rows = c.execute('select x,y,z from points limit '+str(start)+','+str(num))
-    pos_bytes = rowsToBytes(rows)
-    rows = c.execute('select r/255.0,g/255.0,b/255.0 from points limit '+str(start)+','+str(num))
-    color_bytes = rowsToBytes(rows)
-    rows = c.execute('select tmin,tmax from points limit '+str(start)+','+str(num))
-    t_bytes = rowsToBytes(rows)
-    rows = c.execute('select source from points limit '+str(start)+','+str(num))
-    sources = rowsToBytes(rows)
-    # idx based on the row index in the db
-    rows = c.execute('select rowid from points limit '+str(start)+','+str(num))
-    idxs = rowsToBytes(rows)
-
-    return Response(pos_bytes+color_bytes+t_bytes+sources+idxs, mimetype='application/octet-stream')
   finally:
     conn.close()
 
@@ -176,42 +166,23 @@ def getPtJson():
   finally:
     conn.close()
 
-@app.route('/api/getPtFromRowId')
-def getPtFromRowId():
-  rowid = request.args.get('rowid', 0, type=int)
-  dataset = request.args.get('dataset', default_dataset, type=str)
-  if dataset not in available_dataset:
-    dataset = default_dataset
-  conn = sqlite3.connect(dataset+'.db')
-
-  try:
-    c = conn.cursor()
-    rows = c.execute('select '+','.join(pointsFields)+' from points where rowid = '+str(rowid))
-    pts = [pointToJson(row) for row in rows]
-    return jsonify({'points': pts})
-  finally:
-    conn.close()
-
-@app.route('/api/getPtTimeProfile')
-def getPtTimeProfile():
+@app.route('/api/getPtFromIdx')
+def getPtFromIdx():
   idx = request.args.get('idx', 0, type=int)
   dataset = request.args.get('dataset', default_dataset, type=str)
   if dataset not in available_dataset:
     dataset = default_dataset
-
   with open(dataset + '.db_info', 'r') as rf:
     info = json.load(rf)
   conn = sqlite3.connect(dataset+'.db')
 
   try:
     c = conn.cursor()
-    times = None
-    num_rows = 0
-    if dataset != default_dataset:
-      rows = c.execute('select point_idx,interval_str from time_intervals where point_idx = '+str(idx))
-      times, num_rows = prepareTimeIntervals(rows, info['tmax'], info['tmin'])
-
-    return jsonify({'time_intervals': times, 'num': num_rows})
+    rows = c.execute('select '+','.join(pointsFields)+' from points where idx = '+str(idx))
+    pts = [pointToJson(row) for row in rows]
+    rows = c.execute('select idx,tmin,tmax,interval_str from points where idx = '+str(idx))
+    times, num_rows = prepareTimeIntervals(rows, info)
+    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows})
   finally:
     conn.close()
 

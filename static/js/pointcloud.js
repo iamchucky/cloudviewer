@@ -291,15 +291,17 @@ $(function() {
       return;
     }
     params.currPointId = pointId;
-    $.getJSON('api/getPtFromRowId?dataset='+params.dataset+'&rowid='+pointId, function(data) {
+    $.getJSON('api/getPtFromIdx?dataset='+params.dataset+'&idx='+pointId, function(data) {
       if (data) {
         var pointData = data['points'][0];
         params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
         gl_invalidate = true;
 
         fillPointMeta(pointData);
-        if (timeProfile) {
-          requestTimeProfile(pointData['idx']);
+        if (timeProfile && data['time_intervals']) {
+          timeProfile.drawChart(data['time_intervals'], data['num_rows'], params.tmax, params.tmin);
+          $('#loading_text').css('top', '70px');
+          $('#stats').css('top','70px');
         }
       }
     });
@@ -308,18 +310,6 @@ $(function() {
     }
     gl_invalidate = true;
     gl.ondraw();
-  };
-
-  var requestTimeProfile = function(idx) {
-    $.getJSON('api/getPtTimeProfile?dataset='+params.dataset+'&idx='+idx, function(data) {
-      if (data) {
-        if (timeProfile && data['time_intervals']) {
-          timeProfile.drawChart(data['time_intervals'], data['num'], params.tmax, params.tmin);
-          $('#loading_text').css('top', '70px');
-          $('#stats').css('top','70px');
-        }
-      }
-    });
   };
 
   gl.rotateWorldXY = function(x, y, dx, dy) {
@@ -683,6 +673,18 @@ $(function() {
         params.time = parseFloat($(this).val());
         $('#current_time').text(unixTimeToHumanDateStr(params.time));
         gl_invalidate = true;
+      })
+      .mousemove(function(e) {
+        var offset = e.offsetX;
+        var min = parseInt($(this).attr('min'));
+        var timespan = parseInt($(this).attr('max')) - min;
+        var width = this.clientWidth;
+        var sw = 20;  // slider thumb width
+        var sw2 = sw/2;
+        var date = Math.floor((Math.min(Math.max(sw2, e.offsetX), width-sw2)-sw2) / (width-sw) * timespan) + min;
+        $('#time_tooltip').text(unixTimeToHumanDateStr(date));
+        var widthOffset = $('#time_tooltip')[0].clientWidth / 2;
+        $('#time_tooltip').css('left', e.clientX-widthOffset+'px');
       })
       .val(params.time);
 

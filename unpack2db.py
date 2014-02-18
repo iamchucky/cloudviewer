@@ -5,13 +5,12 @@ import numpy
 import json
 from math import isnan
 
-if len(sys.argv) != 4:
-  print 'Usage: python %s <msgpack_filename> <db_filename> <has_time_intervals(0:1)>' % sys.argv[0]
+if len(sys.argv) != 3:
+  print 'Usage: python %s <msgpack_filename> <db_filename>' % sys.argv[0]
   sys.exit(-1)
 
 pack_file = sys.argv[1]
 db = sys.argv[2]
-has_time_intervals = sys.argv[3] > 0
 conn = sqlite3.connect(db)
 db_data = None
 
@@ -29,7 +28,8 @@ def createDb():
       'tmin integer not null,' +
       'tmax integer not null,' +
       'source integer not null,' +
-      'idx integer not null)')
+      'interval_str blob not null,' +
+      'idx integer not null primary key)')
   conn.execute('create table if not exists cameras(' +
       'f real not null,' +
       'k1 real not null,' +
@@ -48,14 +48,10 @@ def createDb():
       't3 real not null,' + 
       'fovy real not null,' + 
       'aspect real not null)')
-  if has_time_intervals:
-    conn.execute('create table if not exists time_intervals(' +
-        'point_idx integer not null primary key,' +
-        'interval_str blob not null)')
   conn.commit()
 
 def filterNone(objs):
-  return [obj for obj in objs if None not in obj and len(filter(isnan, obj)) == 0]
+  return [obj for obj in objs if None not in obj and not (type(obj) is float and len(filter(isnan, obj)) > 0)]
 
 def loadPoints():
   global db_data
@@ -68,25 +64,20 @@ def migrate():
   cameras = filterNone(db_data['cameras']['attributes'])
   print '%d cameras' % len(cameras)
   conn.executemany("insert into cameras (f,k1,k2,R11,R12,R13,R21,R22,R23,R31,R32,R33,t1,t2,t3,fovy,aspect) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", cameras)
+  cameras = None
+  db_data['cameras'] = None
+  time_dict = {}
+  for d in db_data['time-intervals']:
+    time_dict[d[0]] = buffer(d[1])
+  print '%d points time_intervals' % len(time_dict)
 # points
-  points = filterNone([x[:6]+x[9:] for x in db_data['points']['attributes']])
+  points = filterNone([x[:6]+x[9:]+[time_dict[x[-1]]] for x in db_data['points']['attributes']])
   print '%d points' % len(points)
-  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx) values (?,?,?,?,?,?,?,?,?,?)", points)
+  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,source,idx,interval_str) values (?,?,?,?,?,?,?,?,?,?,?)", points)
+  points = None
+  db_data['points'] = None
 # commit
   conn.commit()
-
-  if has_time_intervals:
-    # free cameras and points
-    cameras = None
-    points = None
-    db_data['points'] = None
-    db_data['cameras'] = None
-    # time_intervals
-    time_intervals = [[d[0], buffer(d[1])] for d in db_data['time-intervals']]
-    print '%d points time_intervals' % len(time_intervals)
-    conn.executemany("insert into time_intervals (point_idx, interval_str) values (?,?)", time_intervals)
-    # commit
-    conn.commit()
 
 def main():
   loadPoints()
