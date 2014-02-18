@@ -3,7 +3,6 @@ Number.prototype.padLeft = function (n,str){
 };
 
 $(function() {
-  $('#current_time').css('left', ($(window).width()/2-50)+'px');
   $('#photo_strip').css('width', $(window).width()-10+'px');
 
   var timeProfile = null;
@@ -17,7 +16,6 @@ $(function() {
     timeProfile.redraw();
     var width = $(window).width();
     $('#photo_strip').css('width', width-10+'px');
-    $('#current_time').css('left', (width/2-50)+'px');
   });
 
   // proceed with WebGL
@@ -64,12 +62,9 @@ $(function() {
   params.dataset = $('#dataset').text();
 
   // define the DAT.GUI
-  var timeGui = new dat.GUI({ autoPlace: false });
-  document.getElementById('dat_gui_container_time').appendChild(timeGui.domElement);
   var gui = new dat.GUI({ autoPlace: false });
   document.getElementById('dat_gui_container').appendChild(gui.domElement);
 
-  var timesFolder = gui.addFolder('Times');
   var viewsFolder = gui.addFolder('Views');
   var guiZoom = viewsFolder.add(params, 'cameraZ', 1.0, 2048.0)
     .name('camera z')
@@ -106,6 +101,8 @@ $(function() {
       $('#dat_gui_container').css('bottom', photoStripBottom + 150 + 'px');
       $('#point_meta').css('bottom', photoStripBottom + 130 + 'px');
       $('#current_time').css('bottom', photoStripBottom + 150 + 'px');
+      $('#time_seekbar').css('bottom', photoStripBottom + 190 + 'px');
+      $('#playback_control').css('bottom', photoStripBottom + 210 + 'px');
       setTimeout(function() {
         gl.fullscreen({
           providedCanvas: true, 
@@ -640,34 +637,61 @@ $(function() {
     gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
     gl.bufferData (gl.ARRAY_BUFFER, array, gl.STATIC_DRAW); 
     return buffer;
-  }
+  };
 
+  var timelapseHandle = null;
+  var startTimelapse = function() {
+    if ($('#time_seekbar').val() == $('#time_seekbar').attr('max')) {
+      params.time = parseFloat($('#time_seekbar').attr('min'));
+      $('#time_seekbar').val(params.time);
+    }
+
+    $('#play_pause').removeClass('fa-play').addClass('fa-pause');
+    var playbackInterval = setInterval(function() {
+      if (params.time > $('#time_seekbar').attr('max')) {
+        pauseTimelapse();
+        return;
+      }
+      params.time += 24*3600.0;
+      $('#current_time').text(unixTimeToHumanDate(params.time));
+      $('#time_seekbar').val(params.time);
+      gl_invalidate = true;
+    }, 50);
+    return playbackInterval;
+  };
+  var pauseTimelapse = function() {
+    $('#play_pause').removeClass('fa-pause').addClass('fa-play');
+    clearInterval(timelapseHandle);
+  };
+
+  $('#play_pause').click(function() {
+    var classes = $(this).attr('class');
+    if (classes.match(/fa-pause/g)) {
+      pauseTimelapse();
+    } else {
+      timelapseHandle = startTimelapse();
+    }
+  });
 
   // get the time range
   $.getJSON('api/getInfo?dataset='+params.dataset, function(data) {
     params.time = (data.tmin + data.tmax) / 2;
-    params.startTime = params.time;
-    params.windowSize = (params.time - data.tmin)/4;
     params.camCount = 0;//data.camCount;
     params.ptCount = data.ptCount;
     params.chunkCount = data.chunkCount;
     params.chunkSize = data.chunkSize;
 
-    $('#current_time').text(unixTimeToHumanDate(params.time));
     // setup gui control
-    timeGui.add(params, 'time', data.tmin, data.tmax)
-      .name('current time')
-      .onChange(function(val) {
-      $('#current_time').text(unixTimeToHumanDate(params.time));
-      gl_invalidate = true;
-    });
-    timesFolder.add(params, 'time', data.tmin, data.tmax)
-      .name('current time')
-      .onChange(function(val) {
-      $('#current_time').text(unixTimeToHumanDate(params.time));
-      gl_invalidate = true;
-    });
-    timesFolder.open();
+    $('#current_time').text(unixTimeToHumanDate(params.time));
+    $('#time_seekbar')
+      .attr('max', data.tmax)
+      .attr('min', data.tmin)
+      .change(function(e) {
+        params.time = parseFloat($(this).val());
+        $('#current_time').text(unixTimeToHumanDate(params.time));
+        gl_invalidate = true;
+      })
+      .val(params.time);
 
     if (data.sources) {
       var sourcesFolder = gui.addFolder('Sources');
@@ -682,6 +706,10 @@ $(function() {
     // now get all the cameras then points
     fetchCameras(0, fetchParticles, [0, function() {
       $('#loading_text').hide();
+      if (timelapseHandle) {
+        clearInterval(timelapseHandle);
+      }
+      timelapseHandle = startTimelapse();
     }]);
   });
 
