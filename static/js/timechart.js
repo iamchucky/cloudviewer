@@ -1,4 +1,4 @@
-var TimeProfile = function(elementId) {
+var TimeChart = function(elementId) {
   this.elementId = elementId;
   this.container = document.getElementById(elementId);
   this.chart = new google.visualization.Timeline(this.container);
@@ -16,11 +16,11 @@ var TimeProfile = function(elementId) {
   };
 };
 
-TimeProfile.prototype.drawChart = function(data, rowCount, tmax, tmin) {
+TimeChart.prototype.draw = function(data, rowCount, tmax, tmin) {
   if (data && data.rows) {
     // set tmax and tmin for time profile chart
-    var tmaxDate = 'Date('+unixTimeToHumanDate(tmax).join(', ')+')';
-    var tminDate = 'Date('+unixTimeToHumanDate(tmin).join(', ')+')';
+    var tmaxDate = 'Date('+utils.unixTimeToHumanDate(tmax).join(', ')+')';
+    var tminDate = 'Date('+utils.unixTimeToHumanDate(tmin).join(', ')+')';
     data.rows.push({
       'c':[{'v':'extent'}, {'v':tminDate}, {'v':tmaxDate}]
     });
@@ -32,21 +32,10 @@ TimeProfile.prototype.drawChart = function(data, rowCount, tmax, tmin) {
   $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
 };
 
-TimeProfile.prototype.redraw = function() {
+TimeChart.prototype.redraw = function() {
   if (this.dataTable) {
     this.chart.draw(this.dataTable, this.options);
+    $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
   }
 };
 
-var unixTimeToHumanDate = function(timestamp) {
-  var date = new Date(timestamp * 1000),
-      dateVals = [
-        date.getFullYear(),
-        (date.getMonth()+1).padLeft(2),
-        date.getDate().padLeft(2)];
-  return dateVals;
-};
-
-var unixTimeToHumanDateStr = function(timestamp) {
-  return unixTimeToHumanDate(timestamp).join('/');
-};
