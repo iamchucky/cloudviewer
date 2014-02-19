@@ -15,29 +15,31 @@
 <script src="../static/js/main.js"></script>
 
 <canvas id="canvas"></canvas>
-<div id="current_time"></div>
-<ul id="point_meta">
-  <li id='point_meta_idx'></li>
-  <li id='point_meta_x'></li>
-  <li id='point_meta_y'></li>
-  <li id='point_meta_z'></li>
-  <li id='point_meta_r'></li>
-  <li id='point_meta_g'></li>
-  <li id='point_meta_b'></li>
-  <li id='point_meta_tmin'></li>
-  <li id='point_meta_tmax'></li>
-</ul>
 <div id="time_chart"></div>
 <div id="loading_text"><i class="fa fa-spinner fa-spin"></i> Loading...</div>
 <div id="dataset" style="display:none">{{dataset}}</div>
-<div id="playback_control"><i id="play_pause" class="fa fa-play"></i></div>
-<input type="range" id="time_seekbar" step="1">
-<div id="dat_gui_container"></div>
-<div id="photo_strip_container">
-<div id="photo_strip"><ul>
-  <li style="font-size:x-large; width:99%; text-align:center; margin-top:40px; color:gray; cursor:default;">Double-click on a point to load the photos.</li>
-</ul></div>
+<div id="bottom_container">
+  <ul id="point_meta">
+    <li id='point_meta_idx'></li>
+    <li id='point_meta_x'></li>
+    <li id='point_meta_y'></li>
+    <li id='point_meta_z'></li>
+    <li id='point_meta_r'></li>
+    <li id='point_meta_g'></li>
+    <li id='point_meta_b'></li>
+    <li id='point_meta_tmin'></li>
+    <li id='point_meta_tmax'></li>
+  </ul>
+  <div id="playback_control"><i id="play_pause" class="fa fa-play"></i></div>
+  <input type="range" id="time_seekbar" step="1">
+  <div id="photo_strip_container">
+  <div id="photo_strip"><ul>
+    <li style="font-size:x-large; width:99%; text-align:center; margin-top:40px; color:gray; cursor:default;">Double-click on a point to load the photos.</li>
+  </ul></div>
+  </div>
+  <div id="time_tooltip"></div>
+  <div id="current_time"></div>
+  <div id="dat_gui_container"></div>
 </div>
-<div id="time_tooltip"></div>
 
 {% endblock %}

@@ -385,12 +385,7 @@ CloudViewer.prototype.setupDatGui = function() {
     .name('show photostrip')
     .onChange(function(val) {
       var photoStripBottom = val ? 0:-130; 
-      $('#photo_strip_container').css('bottom', photoStripBottom+'px');
-      $('#dat_gui_container').css('bottom', photoStripBottom + 150 + 'px');
-      $('#point_meta').css('bottom', photoStripBottom + 130 + 'px');
-      $('#current_time').css('bottom', photoStripBottom + 150 + 'px');
-      $('#time_seekbar').css('bottom', photoStripBottom + 190 + 'px');
-      $('#playback_control').css('bottom', photoStripBottom + 210 + 'px');
+      $('#bottom_container').css('bottom', photoStripBottom + 'px');
       setTimeout(function() {
         gl.fullscreen({
           providedCanvas: true, 
