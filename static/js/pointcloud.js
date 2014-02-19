@@ -58,9 +58,10 @@ $(function() {
     this.showFps = true;
     this.roundPoints = false;
     this.showClusterId = false;
-    this.currClusterId = -2.0;
-    this.clusterFgColor = '#ff0000';
-    this.clusterBgColor = '#ffffff';
+    this.currClusterId1 = -2.0;
+    this.currClusterId2 = -2.0;
+    this.clusterColor1 = '#ff0000';
+    this.clusterColor2 = '#ffffff';
   };
   var params = new Parameters();
   params.dataset = $('#dataset').text();
@@ -75,13 +76,13 @@ $(function() {
     .onChange(function(val) {
       gl_invalidate = true;
     });
-  clustersFolder.addColor(params, 'clusterFgColor')
-    .name('foreground')
+  clustersFolder.addColor(params, 'clusterColor1')
+    .name('color1')
     .onChange(function(val) {
       gl_invalidate = true;
     });
-  clustersFolder.addColor(params, 'clusterBgColor')
-    .name('background')
+  clustersFolder.addColor(params, 'clusterColor2')
+    .name('color2')
     .onChange(function(val) {
       gl_invalidate = true;
     });
@@ -300,14 +301,16 @@ $(function() {
   var particleShader = new GL.Shader('\
     attribute vec2 t_range;\
     attribute float clusterId;\
+    attribute float clusterColor;\
     uniform float time;\
     uniform float far;\
     uniform float near;\
     uniform float size;\
     uniform float round;\
-    uniform float cluster;\
-    uniform float clusterFgColor;\
-    uniform float clusterBgColor;\
+    uniform float cluster1;\
+    uniform float cluster2;\
+    uniform float clusterColor1;\
+    uniform float clusterColor2;\
     varying vec4 color;\
     varying float rounded_points;\
     void main() {\
@@ -315,16 +318,18 @@ $(function() {
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
         gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
-        if (cluster != -1.0) {\
-          float clusterColor;\
-          if (clusterId == cluster) {\
-            clusterColor = clusterFgColor;\
+        if (cluster1 != -1.0 && cluster2 != -1.0) {\
+          float cColor;\
+          if (clusterId == cluster1) {\
+            cColor = clusterColor1;\
+          } else if (clusterId == cluster2) {\
+            cColor = clusterColor2;\
           } else {\
-            clusterColor = clusterBgColor;\
+            cColor = clusterColor;\
           }\
-          float idx1 = floor(mod(clusterColor, 16777216.0)/65536.0)/255.0;\
-          float idx2 = floor(mod(clusterColor, 65536.0)/256.0)/255.0;\
-          float idx3 = mod(clusterColor, 256.0)/255.0;\
+          float idx1 = floor(mod(cColor, 16777216.0)/65536.0)/255.0;\
+          float idx2 = floor(mod(cColor, 65536.0)/256.0)/255.0;\
+          float idx3 = mod(cColor, 256.0)/255.0;\
           color = vec4(idx1, idx2, idx3, 1.0);\
         } else {\
           color = gl_Color;\
@@ -556,18 +561,26 @@ $(function() {
       gl_invalidate = true;
     }
 
-    if (!e.dragging && e.ctrlKey && params.showClusterId) {
+    if (!e.dragging && (e.ctrlKey || e.altKey) && params.showClusterId) {
       renderIdMap(clusterIdShader);
       var x = e.x | e.clientX;
       var y = e.y | e.clientY;
       var pointId = sampleIdMap(x, y, gl.canvas.width, gl.canvas.height);
       if (pointId == 0) {
-        params.currClusterId = -2.0;
+        if (e.ctrlKey) {
+          params.currClusterId1 = -2.0;
+        } else {
+          params.currClusterId2 = -2.0;
+        }
         gl_invalidate = true;
         gl.ondraw();
         return;
       }
-      params.currClusterId = Math.floor(pointId/256.0);
+      if (e.ctrlKey) {
+        params.currClusterId1 = Math.floor(pointId/256.0);
+      } else {
+        params.currClusterId2 = Math.floor(pointId/256.0);
+      }
       gl_invalidate = true;
       gl.ondraw();
     }
@@ -666,9 +679,10 @@ $(function() {
 
   var renderScene = function(shader) {
     var uniforms = { 
-      cluster: params.showClusterId ? params.currClusterId : -1.0,
-      clusterFgColor: parseInt(params.clusterFgColor.replace('#',''), 16),
-      clusterBgColor: parseInt(params.clusterBgColor.replace('#',''), 16),
+      cluster1: params.showClusterId ? params.currClusterId1 : -1.0,
+      cluster2: params.showClusterId ? params.currClusterId2 : -1.0,
+      clusterColor1: parseInt(params.clusterColor1.replace('#',''), 16),
+      clusterColor2: parseInt(params.clusterColor2.replace('#',''), 16),
       round: params.roundPoints ? 1.0 : 0.0,
       size: params.pointSize,
       near: params.near, 
@@ -814,11 +828,13 @@ $(function() {
         var colorArray = floatArray.subarray(3*chunkSize, 6*chunkSize);
         var timeArray = floatArray.subarray(6*chunkSize, 8*chunkSize);
         var clusterIdArray = floatArray.subarray(8*chunkSize, 9*chunkSize);
-        var idxArray = floatArray.subarray(9*chunkSize, floatArray.length);
+        var clusterColorArray = floatArray.subarray(9*chunkSize, 10*chunkSize);
+        var idxArray = floatArray.subarray(10*chunkSize, floatArray.length);
         var posBuffer = createBuffer(posArray, 3);
         var colorBuffer = createBuffer(colorArray, 3);
         var timeBuffer = createBuffer(timeArray, 2);
         var clusterIdBuffer = createBuffer(clusterIdArray, 1);
+        var clusterColorBuffer = createBuffer(clusterColorArray, 1);
         var idxBuffer = createBuffer(idxArray, 1);
         var ps = new GL.Mesh({triangles:false, colors:true});
         ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
@@ -827,6 +843,8 @@ $(function() {
         ps.vertexBuffers['t_range'].buffer = timeBuffer;
         ps.addVertexBuffer('clusterIds', 'clusterId');
         ps.vertexBuffers['clusterId'].buffer = clusterIdBuffer;
+        ps.addVertexBuffer('clusterColors', 'clusterColor');
+        ps.vertexBuffers['clusterColor'].buffer = clusterColorBuffer;
         ps.addVertexBuffer('idxs', 'idx');
         ps.vertexBuffers['idx'].buffer = idxBuffer;
         particleSystem.push(ps);

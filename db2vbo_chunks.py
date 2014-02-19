@@ -57,12 +57,14 @@ def writeChunk(filename, start, num):
     t_bytes = rowsToBytes(rows)
     rows = c.execute('select clusterid from points limit '+str(start)+','+str(num))
     clusterids = rowsToBytes(rows)
+    rows = c.execute('select clustercolor from points limit '+str(start)+','+str(num))
+    clustercolors = rowsToBytes(rows)
     # idx based on the row index in the db
     rows = c.execute('select rowid from points limit '+str(start)+','+str(num))
     idxs = rowsToBytes(rows)
 
     with gzip.open(filename, 'wb') as wf:
-      wf.write(pos_bytes+color_bytes+t_bytes+clusterids+idxs)
+      wf.write(pos_bytes+color_bytes+t_bytes+clusterids+clustercolors+idxs)
   finally:
     conn.close()
 
