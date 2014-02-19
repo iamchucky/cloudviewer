@@ -22,6 +22,48 @@ body {
   float: left;
 }
 
+#top_container {
+  position: fixed;
+  top: -80px;
+  width: 100%;
+  transition: top 0.2s;
+}
+
+#loading_text {
+  position: absolute;
+  color: white;
+  top: 90px;
+  left: 10px;
+  text-shadow: 0 0 5px black;
+}
+
+#time_chart {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+}
+
+#time_chart text {
+  fill: white;
+  text-shadow: 0 0 5px black;
+}
+
+#time_chart path {
+  stroke-width: 0;
+}
+
+#stats {
+  position: absolute;
+  top: 80px;
+  right: 0px;
+}
+
+#bottom_container {
+  position: fixed;
+  bottom: -130px;
+  transition: bottom 0.2s;
+}
+
 #point_meta {
   display: none;
   bottom: 130px;
@@ -102,29 +144,6 @@ body {
   bottom: 205px;
 }
 
-#loading_text {
-  position: absolute;
-  color: white;
-  top: 10px;
-  left: 10px;
-  text-shadow: 0 0 5px black;
-}
-
-#time_chart {
-  position: fixed;
-  top: 0px;
-  width: 100%;
-}
-
-#time_chart text {
-  fill: white;
-  text-shadow: 0 0 5px black;
-}
-
-#time_chart path {
-  stroke-width: 0;
-}
-
 #dat_gui_container {
   position: absolute;
   bottom: 150px;
@@ -191,10 +210,4 @@ body {
 #photo_strip li:hover {
   opacity: 0.9;
   cursor: pointer;
-}
-
-#bottom_container {
-  position: fixed;
-  bottom: -130px;
-  transition: bottom 0.2s;
 }

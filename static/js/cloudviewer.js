@@ -90,8 +90,7 @@ CloudViewer.prototype.setupGL = function() {
         if (cv.timeChart && data['time_intervals']) {
           cv.timeChart.draw(data['time_intervals'], data['num_rows'],
             params.tmax, params.tmin);
-          $('#loading_text').css('top', '80px');
-          $('#stats').css('top','80px');
+          $('#top_container').css('top','0px');
         }
       }
     });
@@ -276,10 +275,7 @@ CloudViewer.prototype.setupUI = function() {
   var params = this.params;
 
   var stats = new Stats();
-  stats.domElement.style.position = 'absolute';
-  stats.domElement.style.right = '0px';
-  stats.domElement.style.top = '0px';
-  document.body.appendChild( stats.domElement );
+  $('#top_container')[0].appendChild( stats.domElement );
   this.stats = stats;
 
   this.setupDatGui();
