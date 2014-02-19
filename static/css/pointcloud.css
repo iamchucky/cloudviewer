@@ -68,7 +68,8 @@ body {
   transition: bottom 0.2s;
 }
 #playback_control:hover {
-  text-shadow: 0 0 5px white;
+  padding-bottom: 2px;
+  text-shadow: 0 2px 8px black;
 }
 
 #time_seekbar {
@@ -141,6 +142,12 @@ body {
 }
 #dat_gui_container > div > div {
   top: 0px;
+}
+#dat_gui_container *, #dat_gui_container *:before, #dat_gui_container *:after {
+  box-sizing: initial;
+}
+#dat_gui_container input {
+  line-height: normal;
 }
 
 #photo_strip {

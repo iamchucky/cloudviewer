@@ -58,6 +58,9 @@ $(function() {
     this.showFps = true;
     this.roundPoints = false;
     this.showClusterId = false;
+    this.currClusterId = -2.0;
+    this.clusterFgColor = '#ff0000';
+    this.clusterBgColor = '#ffffff';
   };
   var params = new Parameters();
   params.dataset = $('#dataset').text();
@@ -65,6 +68,24 @@ $(function() {
   // define the DAT.GUI
   var gui = new dat.GUI({ autoPlace: false });
   document.getElementById('dat_gui_container').appendChild(gui.domElement);
+
+  var clustersFolder = gui.addFolder('Clusters');
+  clustersFolder.add(params, 'showClusterId')
+    .name('color by cluster')
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
+  clustersFolder.addColor(params, 'clusterFgColor')
+    .name('foreground')
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
+  clustersFolder.addColor(params, 'clusterBgColor')
+    .name('background')
+    .onChange(function(val) {
+      gl_invalidate = true;
+    });
+  clustersFolder.open();
 
   var guiZoom = gui.add(params, 'cameraZ', 1.0, 2048.0)
     .name('camera z')
@@ -86,11 +107,6 @@ $(function() {
     });
   gui.add(params, 'resetTrackball')
     .name('reset trackball')
-    .onChange(function(val) {
-      gl_invalidate = true;
-    });
-  gui.add(params, 'showClusterId')
-    .name('color by cluster')
     .onChange(function(val) {
       gl_invalidate = true;
     });
@@ -232,6 +248,43 @@ $(function() {
       gl_FragColor = color;\
     }\
   ');
+  var clusterIdShader = new GL.Shader('\
+    attribute vec2 t_range;\
+    attribute float clusterId;\
+    uniform float time;\
+    uniform float size;\
+    uniform float round;\
+    varying vec4 color;\
+    varying float rounded_points;\
+    void main() {\
+      if (t_range[0] <= time && t_range[1] >= time) {\
+        gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+        vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
+        gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
+        float idx1 = floor(mod(clusterId, 16777216.0)/65536.0)/255.0;\
+        float idx2 = floor(mod(clusterId, 65536.0)/256.0)/255.0;\
+        float idx3 = mod(clusterId, 256.0)/255.0;\
+        color = vec4(idx1, idx2, idx3, 1.0);\
+        rounded_points = round;\
+      } else {\
+        gl_PointSize = 0.0;\
+      }\
+    }\
+    ', '\
+    varying vec4 color;\
+    varying float rounded_points;\
+    void main() {\
+      if (rounded_points == 1.0) {\
+        vec2 m = vec2(2.0*(gl_PointCoord.x - 0.5), 2.0*(gl_PointCoord.y - 0.5));\
+        float a = m.x * m.x;\
+        float b = m.y * m.y;\
+        if (1.0-a-b < 0.0) {\
+          discard;\
+        }\
+      }\
+      gl_FragColor = color;\
+    }\
+  ');
 
   // boring camera shader
   var cameraShader = new GL.Shader('\
@@ -253,6 +306,8 @@ $(function() {
     uniform float size;\
     uniform float round;\
     uniform float cluster;\
+    uniform float clusterFgColor;\
+    uniform float clusterBgColor;\
     varying vec4 color;\
     varying float rounded_points;\
     void main() {\
@@ -260,8 +315,17 @@ $(function() {
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
         gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
-        if (cluster == 1.0) {\
-          color = vec4(clusterId/255.0, 1.0, 1.0, 1.0);\
+        if (cluster != -1.0) {\
+          float clusterColor;\
+          if (clusterId == cluster) {\
+            clusterColor = clusterFgColor;\
+          } else {\
+            clusterColor = clusterBgColor;\
+          }\
+          float idx1 = floor(mod(clusterColor, 16777216.0)/65536.0)/255.0;\
+          float idx2 = floor(mod(clusterColor, 65536.0)/256.0)/255.0;\
+          float idx3 = mod(clusterColor, 256.0)/255.0;\
+          color = vec4(idx1, idx2, idx3, 1.0);\
         } else {\
           color = gl_Color;\
         }\
@@ -287,10 +351,10 @@ $(function() {
   ');
 
   gl.ondblclick = function(e) {
-    renderPointIdMap();
+    renderIdMap(pointIdShader);
     var x = e.x | e.clientX;
     var y = e.y | e.clientY;
-    var pointId = samplePointIdMap(x, y, gl.canvas.width, gl.canvas.height);
+    var pointId = sampleIdMap(x, y, gl.canvas.width, gl.canvas.height);
     if (pointId == 0) {
       gl_invalidate = true;
       gl.ondraw();
@@ -491,6 +555,22 @@ $(function() {
       }
       gl_invalidate = true;
     }
+
+    if (!e.dragging && e.ctrlKey && params.showClusterId) {
+      renderIdMap(clusterIdShader);
+      var x = e.x | e.clientX;
+      var y = e.y | e.clientY;
+      var pointId = sampleIdMap(x, y, gl.canvas.width, gl.canvas.height);
+      if (pointId == 0) {
+        params.currClusterId = -2.0;
+        gl_invalidate = true;
+        gl.ondraw();
+        return;
+      }
+      params.currClusterId = Math.floor(pointId/256.0);
+      gl_invalidate = true;
+      gl.ondraw();
+    }
   };
 
   gl.onmousescroll = function (e) {
@@ -539,13 +619,13 @@ $(function() {
     }
   };
 
-  var renderPointIdMap = function() {
+  var renderIdMap = function(shader) {
     gl.clearColor(0, 0, 0, 0);
     gl.colorMask(true, true, true, true);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    renderScene(pointIdShader);
+    renderScene(shader);
   };
-  var samplePointIdMap = function(x, y, width, height) {
+  var sampleIdMap = function(x, y, width, height) {
     var pixels = new Uint8Array(4);
     gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];
@@ -586,12 +666,14 @@ $(function() {
 
   var renderScene = function(shader) {
     var uniforms = { 
-          cluster: params.showClusterId ? 1.0 : 0.0,
-          round: params.roundPoints ? 1.0 : 0.0,
-          size: params.pointSize,
-          near: params.near, 
-          far: params.far, 
-          time: params.time 
+      cluster: params.showClusterId ? params.currClusterId : -1.0,
+      clusterFgColor: parseInt(params.clusterFgColor.replace('#',''), 16),
+      clusterBgColor: parseInt(params.clusterBgColor.replace('#',''), 16),
+      round: params.roundPoints ? 1.0 : 0.0,
+      size: params.pointSize,
+      near: params.near, 
+      far: params.far, 
+      time: params.time 
     };
     for (var i = 0; i < particleSystem.length; i++) {
       shader.uniforms(uniforms)
