@@ -3,6 +3,8 @@ var TimeChart = function(elementId) {
   this.container = document.getElementById(elementId);
   this.chart = new google.visualization.Timeline(this.container);
   this.dataTable = null;
+  this.tmax = 0;
+  this.tmin = 0;
   this.options = {
     backgroundColor: '#1a1a1a',
     height: 70,
@@ -19,6 +21,8 @@ var TimeChart = function(elementId) {
 TimeChart.prototype.draw = function(data, rowCount, tmax, tmin) {
   if (data && data.rows) {
     // set tmax and tmin for time profile chart
+    this.tmax = tmax;
+    this.tmin = tmin;
     var tmaxDate = 'Date('+utils.unixTimeToHumanDate(tmax).join(', ')+')';
     var tminDate = 'Date('+utils.unixTimeToHumanDate(tmin).join(', ')+')';
     data.rows.push({
@@ -39,3 +43,19 @@ TimeChart.prototype.redraw = function() {
   }
 };
 
+TimeChart.prototype.addTicks = function(data, color) {
+  data = [0];
+  var ticksHTML = [];
+  for (var d in data) {
+    var elemStr = '<path d="" style="stroke:'+color+'; stroke-width:1px; fill-opacity:1; fill:none;"></path>';
+    ticksHTML.push(elemStr);
+  }
+  ticksHTML = ticksHTML.join();
+  if (!$('#ticks')) {
+    ticksHTML = '<g id="ticks">'+ticksHTML+'</g>';
+    $('#' + this.elementId + ' > svg').append($(ticksHTML));
+  } else {
+    $('#ticks').empty();
+    $('#ticks').append($(ticksHTML));
+  }
+};
