@@ -90,9 +90,10 @@ def migrate():
       clustercolor[0] = random.randint(0, 16777215)
 
                                             #cluster info       #time intervals    #ticks info
-  points = filterNone([x[:6]+x[9:11]+x[12:]+[0, clustercolor[0]]+[time_dict[x[-1]]]+ticks_dict[x[-1]] for x in db_data['points']['attributes']])
+  #points = filterNone([x[:6]+x[9:11]+x[12:]+[0, clustercolor[0]]+[time_dict[x[-1]]]+ticks_dict[x[-1]] for x in db_data['points']['attributes']])
+  points = filterNone([x[:6]+x[9:11]+x[12:]+[0, clustercolor[0]]+[time_dict[x[-1]]]+['','',''] for x in db_data['points']['attributes']])
   print '%d points' % len(points)
-  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,idx,clusterid,clustercolor,interval_str,event_types_str,timestamps_str,camera_ids) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", points)
+  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,idx,clusterid,clustercolor,interval_str,event_types_str,timestamps_str,camera_ids_str) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", points)
   points = None
   db_data['points'] = None
 # commit
