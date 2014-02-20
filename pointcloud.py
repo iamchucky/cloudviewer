@@ -47,6 +47,37 @@ def rowsToBytes(rows):
   bytes = array.array('f', data)
   return bytes.tostring()
 
+def prepareTimeTicks(rows, info):
+  ticks = {'positives': [], 'negatives': []}
+  tmax = info['tmax']
+  tmin = info['tmin']
+  for r in rows:
+    idx = r[0]
+    is_positive_str = r[1]
+    ts_str = r[2]
+    cam_str = r[3]
+    is_positives = numpy.fromstring(is_positive_str, dtype=numpy.bool_)
+    timestamps = numpy.fromstring(ts_str, dtype=numpy.float32)
+    camera_ids = numpy.fromstring(cam_str, dtype=numpy.uint64)
+    for i in xrange(0, len(timestamps)):
+      ts = timestamps[i]
+      # filter out timestamps that are out of the tmax and tmin
+      if ts < tmin or ts > tmax:
+        continue
+      pos = is_positives[i]
+      camid = camera_ids[i]
+      data = {
+          'timestamp': ts,
+          'camid': camid
+        }
+      if pos:
+        ticks['positives'].append(data)
+      else:
+        ticks['negatives'].append(data)
+
+  return ticks
+
+
 def prepareTimeIntervals(rows, info):
   data_str = ''
   times = {
@@ -183,6 +214,9 @@ def getPtFromIdx():
     pts = [pointToJson(row) for row in rows]
     rows = c.execute('select idx,tmin,tmax,interval_str from points where idx = '+str(idx))
     times, num_rows = prepareTimeIntervals(rows, info)
+    #rows = c.execute('select idx,event_types_str,timestamps_str,camera_ids_str from points where idx = '+str(idx))
+    #ticks = prepareTimeTicks(rows, info)
+    #return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks})
     return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows})
   finally:
     conn.close()

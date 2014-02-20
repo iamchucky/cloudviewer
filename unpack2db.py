@@ -31,6 +31,9 @@ def createDb():
       'clusterid integer not null,' +
       'clustercolor integer not null,' +
       'interval_str blob not null,' +
+      'event_types_str blob not null,' +
+      'timestamps_str blob not null,' +
+      'camera_ids_str blob not null,' +
       'idx integer not null primary key)')
   conn.execute('create table if not exists cameras(' +
       'f real not null,' +
@@ -68,19 +71,28 @@ def migrate():
   conn.executemany("insert into cameras (f,k1,k2,R11,R12,R13,R21,R22,R23,R31,R32,R33,t1,t2,t3,fovy,aspect) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", cameras)
   cameras = None
   db_data['cameras'] = None
+
   time_dict = {}
   for d in db_data['time-intervals']:
     time_dict[d[0]] = buffer(d[1])
   print '%d points time_intervals' % len(time_dict)
+
+  ticks_dict = {}
+  if 'events' in db_data:
+    for d in db_data['events']:
+      ticks_dict[d[0]] = [buffer(d[1]), buffer(d[2]), buffer(d[3])]
+    print '%d points events' % len(ticks_dict)
+
 # points
   clustercolor = {}
   for x in db_data['points']['attributes']:
     if 0 not in clustercolor:
       clustercolor[0] = random.randint(0, 16777215)
 
-  points = filterNone([x[:6]+x[9:11]+x[12:]+[0]+[clustercolor[0]]+[time_dict[x[-1]]] for x in db_data['points']['attributes']])
+                                            #cluster info       #time intervals    #ticks info
+  points = filterNone([x[:6]+x[9:11]+x[12:]+[0, clustercolor[0]]+[time_dict[x[-1]]]+ticks_dict[x[-1]] for x in db_data['points']['attributes']])
   print '%d points' % len(points)
-  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,idx,clusterid,clustercolor,interval_str) values (?,?,?,?,?,?,?,?,?,?,?,?)", points)
+  conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,idx,clusterid,clustercolor,interval_str,event_types_str,timestamps_str,camera_ids) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", points)
   points = None
   db_data['points'] = None
 # commit

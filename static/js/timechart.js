@@ -41,11 +41,13 @@ TimeChart.prototype.draw = function(data, tmax, tmin) {
   utils.cleanupQtip('alt');
   this.chart.draw(this.dataTable, this.options);
 
-  this.negatives = data.negatives;
-  this.positives = data.positives;
-  this.addNegativeTicks();
-  this.addPositiveTicks();
-  utils.regQtip('alt');
+  if (data.ticks) {
+    this.negatives = data.ticks.negatives;
+    this.positives = data.ticks.positives;
+    this.addNegativeTicks();
+    this.addPositiveTicks();
+    utils.regQtip('alt');
+  }
 
   $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
 };
@@ -54,8 +56,10 @@ TimeChart.prototype.redraw = function() {
   if (this.dataTable) {
     utils.cleanupQtip('alt');
     this.chart.draw(this.dataTable, this.options);
-    this.addNegativeTicks();
-    this.addPositiveTicks();
+    if (this.negatives || this.positives) {
+      this.addNegativeTicks();
+      this.addPositiveTicks();
+    }
     utils.regQtip('alt');
 
     $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
