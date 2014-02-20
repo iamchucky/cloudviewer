@@ -38,7 +38,6 @@ TimeChart.prototype.draw = function(data, tmax, tmin) {
   }
   this.dataTable = new google.visualization.DataTable(times);
   this.options['height'] = 50+rowCount*18;
-  utils.cleanupQtip('alt');
   this.chart.draw(this.dataTable, this.options);
 
   if (data.ticks) {
@@ -46,7 +45,6 @@ TimeChart.prototype.draw = function(data, tmax, tmin) {
     this.positives = data.ticks.positives;
     this.addNegativeTicks();
     this.addPositiveTicks();
-    utils.regQtip('alt');
   }
 
   $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
@@ -54,13 +52,11 @@ TimeChart.prototype.draw = function(data, tmax, tmin) {
 
 TimeChart.prototype.redraw = function() {
   if (this.dataTable) {
-    utils.cleanupQtip('alt');
     this.chart.draw(this.dataTable, this.options);
     if (this.negatives || this.positives) {
       this.addNegativeTicks();
       this.addPositiveTicks();
     }
-    utils.regQtip('alt');
 
     $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
   }
@@ -82,12 +78,6 @@ TimeChart.prototype.addTicks = function(data, color, moveToY, lineToY) {
   var width = $('#' + this.elementId)[0].clientWidth;
   var svgG = $(SVG('g'));
 
-  // fake data
-  data = [
-    {timestamp: 0.7 * timespan + this.tmin, camid: '123'},
-    {timestamp: 0.3 * timespan + this.tmin, camid: '495'}
-  ];
-
   for (var i = 0; i < data.length; ++i) {
     var portion = (data[i].timestamp - this.tmin) / timespan;
     var moveToX = width * portion;
@@ -97,8 +87,18 @@ TimeChart.prototype.addTicks = function(data, color, moveToY, lineToY) {
       .css('stroke', color)
       .css('stroke-width', '1px')
       .css('fill-opacity', '1')
-      .css('fill', 'none');
+      .css('fill', 'none')
+      .mouseover(function(e) {
+        var camid = $(this).attr('alt');
+        $('#ticks_tooltip').text(camid);
+        $('#ticks_tooltip').css('left', e.clientX+'px');
+        $('#ticks_tooltip').css('top', '20px');
+        //console.log(camid);
+      });
     svgG.append(element);
   }
+  $('#time_chart rect').mouseover(function() {
+    $('#ticks_tooltip').css('top', '-999px');
+  });
   svgG.appendTo($('#' + this.elementId + ' svg'));
 };

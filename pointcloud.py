@@ -47,6 +47,25 @@ def rowsToBytes(rows):
   bytes = array.array('f', data)
   return bytes.tostring()
 
+def prepareDummyTimeTicks(info):
+  ticks = {'positives': [], 'negatives': []}
+  tmax = info['tmax']
+  tmin = info['tmin']
+  tmax -= 86400*30*6    # tmax - 6month
+
+  count = 0
+  for i in xrange(tmin, tmax, 86400*4):
+    data = {
+        'timestamp': i,
+        'camid': str(count)
+      }
+    count += 1
+    ticks['positives'].append(data)
+    ticks['negatives'].append(data)
+
+  return ticks
+
+
 def prepareTimeTicks(rows, info):
   ticks = {'positives': [], 'negatives': []}
   tmax = info['tmax']
@@ -216,8 +235,9 @@ def getPtFromIdx():
     times, num_rows = prepareTimeIntervals(rows, info)
     #rows = c.execute('select idx,event_types_str,timestamps_str,camera_ids_str from points where idx = '+str(idx))
     #ticks = prepareTimeTicks(rows, info)
-    #return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks})
-    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows})
+    ticks = prepareDummyTimeTicks(info)
+    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks})
+    #return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows})
   finally:
     conn.close()
 
