@@ -5,6 +5,8 @@ var TimeChart = function(elementId) {
   this.dataTable = null;
   this.tmax = 0;
   this.tmin = 0;
+  this.negatives = null;
+  this.positives = null;
   this.options = {
     backgroundColor: '#1a1a1a',
     height: 70,
@@ -18,44 +20,81 @@ var TimeChart = function(elementId) {
   };
 };
 
-TimeChart.prototype.draw = function(data, rowCount, tmax, tmin) {
-  if (data && data.rows) {
+TimeChart.prototype.draw = function(data, tmax, tmin) {
+  var times = data.time_intervals;
+  var rowCount = data.num_rows;
+  if (times && times.rows) {
     // set tmax and tmin for time profile chart
     this.tmax = tmax;
     this.tmin = tmin;
     var tmaxDate = 'Date('+utils.unixTimeToHumanDate(tmax).join(', ')+')';
     var tminDate = 'Date('+utils.unixTimeToHumanDate(tmin).join(', ')+')';
-    data.rows.push({
-      'c':[{'v':'extent'}, {'v':tminDate}, {'v':tmaxDate}]
-    });
+    var rows = [
+      {'c':[{'v':'extent'}, {'v':tminDate}, {'v':tminDate}]},
+      {'c':[{'v':'extent'}, {'v':tmaxDate}, {'v':tmaxDate}]}
+    ];
+    times.rows.splice(0, 0, rows[0]);
+    times.rows.splice(0, 0, rows[1]);
   }
-  this.dataTable = new google.visualization.DataTable(data);
+  this.dataTable = new google.visualization.DataTable(times);
   this.options['height'] = 50+rowCount*18;
+  utils.cleanupQtip('alt');
   this.chart.draw(this.dataTable, this.options);
+
+  this.negatives = data.negatives;
+  this.positives = data.positives;
+  this.addNegativeTicks();
+  this.addPositiveTicks();
+  utils.regQtip('alt');
 
   $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
 };
 
 TimeChart.prototype.redraw = function() {
   if (this.dataTable) {
+    utils.cleanupQtip('alt');
     this.chart.draw(this.dataTable, this.options);
+    this.addNegativeTicks();
+    this.addPositiveTicks();
+    utils.regQtip('alt');
+
     $('#' + this.elementId + ' > div > div > div').css('overflow-y', 'hidden');
   }
 };
 
-TimeChart.prototype.addTicks = function(data, color) {
-  data = [0];
-  var ticksHTML = [];
-  for (var d in data) {
-    var elemStr = '<path d="" style="stroke:'+color+'; stroke-width:1px; fill-opacity:1; fill:none;"></path>';
-    ticksHTML.push(elemStr);
+var SVG = function(tag) {
+  return document.createElementNS('http://www.w3.org/2000/svg', tag);
+};
+
+TimeChart.prototype.addNegativeTicks = function() {
+  this.addTicks(this.negatives, 'red', 8.54, 17.08);
+};
+TimeChart.prototype.addPositiveTicks = function() {
+  this.addTicks(this.positives, '#2fa1d6', 0, 8.54);
+};
+
+TimeChart.prototype.addTicks = function(data, color, moveToY, lineToY) {
+  var timespan = this.tmax - this.tmin;
+  var width = $('#' + this.elementId)[0].clientWidth;
+  var svgG = $(SVG('g'));
+
+  // fake data
+  data = [
+    {timestamp: 0.7 * timespan + this.tmin, camid: '123'},
+    {timestamp: 0.3 * timespan + this.tmin, camid: '495'}
+  ];
+
+  for (var i = 0; i < data.length; ++i) {
+    var portion = (data[i].timestamp - this.tmin) / timespan;
+    var moveToX = width * portion;
+    var element = $(SVG('path'))
+      .attr('d', 'M'+moveToX+','+moveToY+'L'+moveToX+','+lineToY)
+      .attr('alt', data[i].camid)
+      .css('stroke', color)
+      .css('stroke-width', '1px')
+      .css('fill-opacity', '1')
+      .css('fill', 'none');
+    svgG.append(element);
   }
-  ticksHTML = ticksHTML.join();
-  if (!$('#ticks')) {
-    ticksHTML = '<g id="ticks">'+ticksHTML+'</g>';
-    $('#' + this.elementId + ' > svg').append($(ticksHTML));
-  } else {
-    $('#ticks').empty();
-    $('#ticks').append($(ticksHTML));
-  }
+  svgG.appendTo($('#' + this.elementId + ' svg'));
 };

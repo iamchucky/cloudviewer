@@ -64,6 +64,27 @@ var utils = {
       //console.log('hitplane is null');
     }
     return hitplane;
+  },
+
+  regQtip: function(attr) {
+    $('['+attr+']').qtip({
+      content: {
+        attr: attr 
+      },
+      hide: {
+        fixed: true,
+        delay: 300
+      }
+    });
+  },
+
+  cleanupQtip: function(attr) {
+    $('['+attr+']').each(function() {
+      var q = $(this).data('qtip');
+      if (q != undefined) {
+        q.destroy(true);
+      }
+    });
   }
 
 };

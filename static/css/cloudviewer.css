@@ -49,6 +49,9 @@ body {
 }
 
 #time_chart path {
+  stroke: rgba(255,255,255,0.1);
+}
+#time_chart rect {
   stroke-width: 0;
 }
 

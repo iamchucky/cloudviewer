@@ -82,6 +82,7 @@ def prepareTimeIntervals(rows, info):
       times['rows'].append({
         'c':[{'v':str(idx)}, {'v':start}, {'v':end}]
       })
+    num_rows += 1
     start_d = date.fromtimestamp(point_tmin)
     end_d = date.fromtimestamp(point_tmax)
     start = 'Date(%s)' % str(start_d).replace('-',', ')

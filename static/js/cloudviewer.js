@@ -88,8 +88,7 @@ CloudViewer.prototype.setupGL = function() {
 
         cv.fillPointMeta(pointData);
         if (cv.timeChart && data['time_intervals']) {
-          cv.timeChart.draw(data['time_intervals'], data['num_rows'],
-            params.tmax, params.tmin);
+          cv.timeChart.draw(data, params.tmax, params.tmin);
           $('#top_container').css('top','0px');
         }
       }
