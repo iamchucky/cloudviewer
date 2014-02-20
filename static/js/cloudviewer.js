@@ -23,6 +23,7 @@ var Parameters = function() {
   this.currClusterId2 = -2.0;
   this.clusterColor1 = '#ff0000';
   this.clusterColor2 = '#ffffff';
+  this.showShortkeyHelp = true;
 };
 
 var CloudViewer = function() {
@@ -368,7 +369,7 @@ CloudViewer.prototype.setupDatGui = function() {
       cv.glInvalidate = true;
     });
   gui.add(params, 'showFps')
-    .name('show fps')
+    .name('fps')
     .onFinishChange(function(val) {
       if (val) {
         $('#stats').show();
@@ -376,8 +377,17 @@ CloudViewer.prototype.setupDatGui = function() {
         $('#stats').hide();
       }
     });
+  gui.add(params, 'showShortkeyHelp')
+    .name('shortkey help')
+    .onFinishChange(function(val) {
+      if (val) {
+        $('#shortkey_help').show();
+      } else {
+        $('#shortkey_help').hide();
+      }
+    });
   gui.add(params, 'showPhotoStrip')
-    .name('show photostrip')
+    .name('photostrip')
     .onChange(function(val) {
       var photoStripBottom = val ? 0:-130; 
       $('#bottom_container').css('bottom', photoStripBottom + 'px');

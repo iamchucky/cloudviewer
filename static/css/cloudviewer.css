@@ -24,16 +24,39 @@ body {
 
 #top_container {
   position: fixed;
-  top: -80px;
+  top: -100px;
   width: 100%;
   transition: top 0.2s;
+}
+
+#shortkey_help {
+  position: absolute;
+  top: 100px;
+  left: 0px;
+  height: 88px;
+  color: white;
+  background-color: rgba(0,0,0,0.5);
+  margin: 10px;
+  border-radius: 10px;
+}
+
+#shortkey_help ul {
+  list-style: none;
+  padding: 10px;
+  margin: 0;
+  font-size: smaller;
+}
+#shortkey_help ul li div {
+  float: left;
 }
 
 #loading_text {
   position: absolute;
   color: white;
-  top: 90px;
-  left: 10px;
+  top: 110px;
+  left: 50%;
+  width: 80px;
+  margin-left: -40px;
   text-shadow: 0 0 5px black;
 }
 
@@ -57,7 +80,7 @@ body {
 
 #stats {
   position: absolute;
-  top: 80px;
+  top: 100px;
   right: 0px;
 }
 
