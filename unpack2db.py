@@ -1,17 +1,19 @@
 import sys
 import sqlite3
+import gzip
 import msgpack
 import numpy
 import json
 import random
 from math import isnan
 
-if len(sys.argv) != 3:
-  print 'Usage: python %s <msgpack_filename> <db_filename>' % sys.argv[0]
+if len(sys.argv) != 4:
+  print 'Usage: python %s <db_msgpack_filename> <camera_urls_filename> <db_filename>' % sys.argv[0]
   sys.exit(-1)
 
 pack_file = sys.argv[1]
-db = sys.argv[2]
+camera_urls_pack_file = sys.argv[2]
+db = sys.argv[3]
 conn = sqlite3.connect(db)
 db_data = None
 
@@ -53,6 +55,9 @@ def createDb():
       't3 real not null,' + 
       'fovy real not null,' + 
       'aspect real not null)')
+  conn.execute('create table if not exists camera_urls(' +
+      'camid integer not null primary key,' +
+      'url text not null)')
   conn.commit()
 
 def filterNone(objs):
@@ -72,6 +77,13 @@ def migrate():
   cameras = None
   db_data['cameras'] = None
 
+  # load camera_urls
+  if camera_urls_pack_file != 'none':
+    camera_urls = [row for row in msgpack.Unpacker(gzip.GzipFile('urls.gz', 'rb'))]
+    print '%d camera urls' % len(camera_urls)
+    conn.executemany('insert into camera_urls (camid, url) values (?,?)', camera_urls)
+
+# points
   time_dict = {}
   for d in db_data['time-intervals']:
     time_dict[d[0]] = buffer(d[1])
@@ -83,7 +95,6 @@ def migrate():
       ticks_dict[d[0]] = [buffer(d[1]), buffer(d[2]), buffer(d[3])]
     print '%d points events' % len(ticks_dict)
 
-# points
   clustercolor = {}
   for x in db_data['points']['attributes']:
     if 0 not in clustercolor:

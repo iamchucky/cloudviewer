@@ -91,12 +91,10 @@ CloudViewer.prototype.setupGL = function() {
         if (cv.timeChart && data['time_intervals']) {
           cv.timeChart.draw(data, params.tmax, params.tmin);
           $('#top_container').css('top','0px');
+          cv.loadPhotos(data['camera_urls']);
         }
       }
     });
-    if (params.showPhotoStrip) {
-      cv.getPointPhotos();
-    }
     cv.glInvalidate = true;
     gl.ondraw();
   };
@@ -280,6 +278,12 @@ CloudViewer.prototype.setupUI = function() {
 
   this.setupDatGui();
 
+  $('#photo_viewer').click(function() {
+    $('#photo_viewer').hide();
+  });
+  $('#photo_viewer > img').css('max-width', $(window).width()*0.8+'px');
+  $('#photo_viewer > img').css('max-height', $(window).height()*0.8+'px');
+
   // setup the time player
   var timelapseHandle = null;
   var startTimelapse = function() {
@@ -401,37 +405,35 @@ CloudViewer.prototype.setupDatGui = function() {
         });
         cv.glInvalidate = true;
       }, val?200:0);
-      if (val) {
-        cv.getPointPhotos();
-      }
     });
   this.gui = gui;
 };
 
-CloudViewer.prototype.getPointPhotos = function() {
+CloudViewer.prototype.loadPhotos = function(photoUrls) {
   if (this.params.currPointId == -1) {
     return;
   }
-  //console.log(this.params.currPointId);
 
-  // fetch photo urls
-  var photoUrls = ['test1', 'test2'];
   var photoStripContainer = $('#photo_strip ul');
   photoStripContainer.empty();
-  var photoCount = 15;
+  var photoCount = Math.min(15, photoUrls.length);
   $('#photo_strip ul').css('width', photoCount*206+'px');
 
   // populate the photos
-  //for (var i = 0; i < photoUrls.length; ++i) {
   for (var i = 0; i < photoCount; ++i) {
-    var url = 'http://farm8.staticflickr.com/7350/12504958043_0e45727769_m.jpg';
-    var fullUrl = 'http://farm8.staticflickr.com/7350/12504958043_0e45727769_c.jpg';
-    var elem = $('<li url="'+fullUrl+'" style="background-image:url('+url+')"></li>')
+    var url = photoUrls[i];
+    var elem = $('<li url="'+url+'" style="background-image:url('+url+')"></li>')
       .click(function() {
-        window.open($(this).attr('url'));
+        var img = new Image();
+        img.src = $(this).attr('url');
+        img.onload = function() {
+          $('#photo_viewer > img').attr('src', img.src);
+          $('#photo_viewer').show();
+        };
       });
     photoStripContainer.append(elem);
   }
+  $('#photo_strip').scrollLeft(0);
 };
 
 CloudViewer.prototype.fillPointMeta = function(data) {

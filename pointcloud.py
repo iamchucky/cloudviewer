@@ -54,7 +54,9 @@ def prepareDummyTimeTicks(info):
   tmax -= 86400*30*6    # tmax - 6month
 
   count = 0
+  camids = []
   for i in xrange(tmin, tmax, 86400*4):
+    camids.append(str(count))
     data = {
         'timestamp': i,
         'camid': str(count)
@@ -63,13 +65,14 @@ def prepareDummyTimeTicks(info):
     ticks['positives'].append(data)
     ticks['negatives'].append(data)
 
-  return ticks
+  return ticks, camids
 
 
 def prepareTimeTicks(rows, info):
   ticks = {'positives': [], 'negatives': []}
   tmax = info['tmax']
   tmin = info['tmin']
+  camids = Set()
   for r in rows:
     idx = r[0]
     is_positive_str = r[1]
@@ -85,6 +88,9 @@ def prepareTimeTicks(rows, info):
         continue
       pos = is_positives[i]
       camid = camera_ids[i]
+      if camid not in camids:
+        camids.add(camid)
+
       data = {
           'timestamp': ts,
           'camid': camid
@@ -94,7 +100,8 @@ def prepareTimeTicks(rows, info):
       else:
         ticks['negatives'].append(data)
 
-  return ticks
+  camids = list(camids)
+  return ticks, camids
 
 
 def prepareTimeIntervals(rows, info):
@@ -234,9 +241,16 @@ def getPtFromIdx():
     rows = c.execute('select idx,tmin,tmax,interval_str from points where idx = '+str(idx))
     times, num_rows = prepareTimeIntervals(rows, info)
     #rows = c.execute('select idx,event_types_str,timestamps_str,camera_ids_str from points where idx = '+str(idx))
-    #ticks = prepareTimeTicks(rows, info)
-    ticks = prepareDummyTimeTicks(info)
-    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks})
+    #ticks, camids = prepareTimeTicks(rows, info)
+
+    #comment following three lines out if we have valid ticks data 
+    ticks, camids = prepareDummyTimeTicks(info)
+    rows = c.execute('select camid from camera_urls limit 0,20')
+    camids = [str(row[0]) for row in rows]
+
+    rows = c.execute('select url from camera_urls where camid in ('+','.join(camids)+')')
+    camera_urls = [row[0] for row in rows]
+    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks, 'camera_urls': camera_urls})
     #return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows})
   finally:
     conn.close()
