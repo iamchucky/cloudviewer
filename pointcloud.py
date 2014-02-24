@@ -245,7 +245,7 @@ def getPtFromIdx():
 
     #comment following three lines out if we have valid ticks data 
     ticks, camids = prepareDummyTimeTicks(info)
-    rows = c.execute('select camid from camera_urls limit 0,20')
+    rows = c.execute('select camid from camera_urls limit 0,50')
     camids = [str(row[0]) for row in rows]
 
     rows = c.execute('select url from camera_urls where camid in ('+','.join(camids)+')')

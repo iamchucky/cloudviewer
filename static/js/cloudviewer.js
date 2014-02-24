@@ -414,26 +414,45 @@ CloudViewer.prototype.loadPhotos = function(photoUrls) {
     return;
   }
 
+  var photoCount = Math.min(Math.ceil($(window).width()/206)+1, photoUrls.length);
   var photoStripContainer = $('#photo_strip ul');
   photoStripContainer.empty();
-  var photoCount = Math.min(15, photoUrls.length);
-  $('#photo_strip ul').css('width', photoCount*206+'px');
+  photoStripContainer.css('width', photoCount*206+'px');
+  var start = 0;
 
   // populate the photos
-  for (var i = 0; i < photoCount; ++i) {
+  this.populatePhotostrip(photoUrls, start, photoCount);
+  start += photoCount;
+  
+  // load additional photos when scroll to the end
+  $('#photo_strip').on('scroll', function(e) {
+    var endScrollLeft = photoCount*206 - $(window).width() + 8;
+    if ($(this).scrollLeft() >= endScrollLeft) {
+      if (start >= photoUrls.length) {
+        return;
+      }
+      // load at least 5 more photos
+      var newPhotoCount = Math.min(5, photoUrls.length-photoCount);
+      photoCount += newPhotoCount;
+      photoStripContainer.css('width', photoCount*206+'px');
+      cloudViewer.populatePhotostrip(photoUrls, start, photoCount);
+      start += newPhotoCount;
+    }
+  });
+  $('#photo_strip').scrollLeft(0);
+};
+
+CloudViewer.prototype.populatePhotostrip = function(photoUrls, start, count) {
+  var photoStripContainer = $('#photo_strip ul');
+  for (var i = start; i < count; ++i) {
     var url = photoUrls[i];
     var elem = $('<li url="'+url+'" style="background-image:url('+url+')"></li>')
       .click(function() {
-        var img = new Image();
-        img.src = $(this).attr('url');
-        img.onload = function() {
-          $('#photo_viewer > img').attr('src', img.src);
-          $('#photo_viewer').show();
-        };
+        $('#photo_viewer > img').attr('src', $(this).attr('url'));
+        $('#photo_viewer').show();
       });
     photoStripContainer.append(elem);
   }
-  $('#photo_strip').scrollLeft(0);
 };
 
 CloudViewer.prototype.fillPointMeta = function(data) {
