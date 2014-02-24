@@ -425,6 +425,7 @@ CloudViewer.prototype.loadPhotos = function(photoUrls) {
   start += photoCount;
   
   // load additional photos when scroll to the end
+  $('#photo_strip').off('scroll');
   $('#photo_strip').on('scroll', function(e) {
     var endScrollLeft = photoCount*206 - $(window).width() + 8;
     if ($(this).scrollLeft() >= endScrollLeft) {
