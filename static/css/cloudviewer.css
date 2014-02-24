@@ -243,9 +243,34 @@ body {
   margin: 0 3px;
 }
 
-#photo_strip li:hover {
-  opacity: 0.9;
+#photo_strip li > div {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  top: 0px;
+  left: 0px;
   cursor: pointer;
+}
+
+#photo_strip li.hover > div {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+#photo_strip li > i {
+  display: none;
+  position: relative;
+  top: -100px;
+  padding: 8px;
+  margin: 0;
+  color: #ddd;
+  text-shadow: 0 0 10px black;
+  cursor: pointer;
+}
+#photo_strip li.hover > i {
+  display: inline-block;
+}
+#photo_strip li > i:hover {
+  color: white;
 }
 
 #photo_viewer {

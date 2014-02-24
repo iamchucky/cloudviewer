@@ -447,10 +447,22 @@ CloudViewer.prototype.populatePhotostrip = function(photoUrls, start, count) {
   for (var i = start; i < count; ++i) {
     var url = photoUrls[i];
     var elem = $('<li url="'+url+'" style="background-image:url('+url+')"></li>')
+      .hover(function() {
+        $(this).addClass('hover');
+      }, function() {
+        $(this).removeClass('hover');
+      });
+    var blockElem = $('<div></div>')
       .click(function() {
-        $('#photo_viewer > img').attr('src', $(this).attr('url'));
+        // click to switch to camera's viewpoint;
+      });
+    var zoomElem = $('<i class="fa fa-search"></i>')
+      .click(function() {
+        $('#photo_viewer > img').attr('src', $(this).parent().attr('url'));
         $('#photo_viewer').show();
       });
+    elem.append(blockElem);
+    elem.append(zoomElem);
     photoStripContainer.append(elem);
   }
 };
