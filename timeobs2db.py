@@ -20,7 +20,7 @@ def createDb():
   conn.execute('create table if not exists observations(' +
       'neg_rowid_pack blob not null,' +
       'pos_rowid_pack blob not null,' +
-      'point_idx integer not null primary key)')
+      'point_idx integer not null)')
   conn.execute('create table if not exists cameras(' +
       'timestamp integer not null,' +
       'flickrid text not null unique,' +
@@ -87,6 +87,11 @@ def migrate():
   conn.executemany("insert into observations (point_idx, pos_rowid_pack, neg_rowid_pack) values (?,?,?)", observations)
   conn.commit()
   print 'done with %d observations' % len(observations)
+
+  print 'creating index...'
+  conn.execute('create index oindex on observations(point_idx)')
+  conn.commit()
+  print 'done'
 
 def main():
   createDb()
