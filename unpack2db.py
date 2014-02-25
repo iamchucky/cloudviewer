@@ -70,12 +70,6 @@ def migrate():
   cameras = None
   db_data['cameras'] = None
 
-  # load camera_urls
-  if camera_urls_pack_file != 'none':
-    camera_urls = [row for row in msgpack.Unpacker(gzip.GzipFile('urls.gz', 'rb'))]
-    print '%d camera urls' % len(camera_urls)
-    conn.executemany('insert into camera_urls (camid, url) values (?,?)', camera_urls)
-
 # points
   time_dict = {}
   for d in db_data['time-intervals']:
