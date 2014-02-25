@@ -78,6 +78,10 @@ body {
   stroke-width: 0;
 }
 
+#time_chart rect[y="3.75"] {
+  display: none;
+}
+
 #ticks_tooltip {
   position: absolute;
   top: -999px;
