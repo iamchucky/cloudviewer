@@ -71,7 +71,7 @@ def prepareDummyTimeTicks(info):
   return ticks, camids
 
 
-def prepareTimeObservations(info):
+def prepareTimeObservations(info, idx):
   with sqlite3.connect(observations[dataset]) as con:
     cur = con.cursor()
     rows = cur.execute('select pos_rowid_pack,neg_rowid_pack from observations where point_idx = '+str(idx))
@@ -251,7 +251,7 @@ def getPtFromIdx():
     pts = [pointToJson(row) for row in rows]
     rows = c.execute('select idx,tmin,tmax,interval_str from points where idx = '+str(idx))
     times, num_rows = prepareTimeIntervals(rows, info)
-    ticks, camera_urls = prepareTimeObservations(rows, info, cur)
+    ticks, camera_urls = prepareTimeObservations(info, idx)
 
     return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks, 'camera_urls': camera_urls})
   finally:
