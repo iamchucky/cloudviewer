@@ -7,13 +7,12 @@ import json
 import random
 from math import isnan
 
-if len(sys.argv) != 4:
-  print 'Usage: python %s <db_msgpack_filename> <camera_urls_filename> <db_filename>' % sys.argv[0]
+if len(sys.argv) != 3:
+  print 'Usage: python %s <db_msgpack_filename> <db_filename>' % sys.argv[0]
   sys.exit(-1)
 
 pack_file = sys.argv[1]
-camera_urls_pack_file = sys.argv[2]
-db = sys.argv[3]
+db = sys.argv[2]
 conn = sqlite3.connect(db)
 db_data = None
 
@@ -52,9 +51,6 @@ def createDb():
       't3 real not null,' + 
       'fovy real not null,' + 
       'aspect real not null)')
-  conn.execute('create table if not exists camera_urls(' +
-      'camid integer not null primary key,' +
-      'url text not null)')
   conn.commit()
 
 def filterNone(objs):
@@ -86,19 +82,12 @@ def migrate():
     time_dict[d[0]] = buffer(d[1])
   print '%d points time_intervals' % len(time_dict)
 
-  ticks_dict = {}
-  if 'events' in db_data:
-    for d in db_data['events']:
-      ticks_dict[d[0]] = [buffer(d[1]), buffer(d[2]), buffer(d[3])]
-    print '%d points events' % len(ticks_dict)
-
   clustercolor = {}
   for x in db_data['points']['attributes']:
     if 0 not in clustercolor:
       clustercolor[0] = random.randint(0, 16777215)
 
                                             #cluster info       #time intervals    #ticks info
-  #points = filterNone([x[:6]+x[9:11]+x[12:]+[0, clustercolor[0]]+[time_dict[x[-1]]]+ticks_dict[x[-1]] for x in db_data['points']['attributes']])
   points = filterNone([x[:6]+x[9:11]+x[12:]+[0, clustercolor[0]]+[time_dict[x[-1]]] for x in db_data['points']['attributes']])
   print '%d points' % len(points)
   conn.executemany("insert into points (x,y,z,r,g,b,tmin,tmax,idx,clusterid,clustercolor,interval_str) values (?,?,?,?,?,?,?,?,?,?,?,?)", points)

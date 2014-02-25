@@ -7,12 +7,13 @@ import json
 import random
 from math import isnan
 
-if len(sys.argv) != 3:
-  print 'Usage: python %s <db_msgpack_filename> <db_filename>' % sys.argv[0]
+if len(sys.argv) != 4:
+  print 'Usage: python %s <time_observation_filename> <url_gz_filename> <db_filename>' % sys.argv[0]
   sys.exit(-1)
 
 pack_file = sys.argv[1]
-db = sys.argv[2]
+url_pack_file = sys.argv[2]
+db = sys.argv[3]
 conn = sqlite3.connect(db)
 
 def createDb():
@@ -20,9 +21,10 @@ def createDb():
       'neg_rowid_pack blob not null,' +
       'pos_rowid_pack blob not null,' +
       'point_idx integer not null primary key)')
-  conn.execute('create table if not exists camera_timestamps(' +
+  conn.execute('create table if not exists cameras(' +
       'timestamp integer not null,' +
       'flickrid text not null unique,' +
+      'url text not null,' +
       'rowid integer not null primary key)')
   conn.commit()
 
@@ -30,6 +32,13 @@ def filterNone(objs):
   return [obj for obj in objs if None not in obj and not (type(obj) is float and len(filter(isnan, obj)) > 0)]
 
 def migrate():
+  camera_urls = {}
+  for flickrid, url in msgpack.Unpacker(gzip.GzipFile(url_pack_file, 'rb')):
+    flickrid = str(flickrid)
+    if flickrid not in camera_urls:
+      camera_urls[flickrid] = url
+  print 'loaded %d camera urls' % len(camera_urls)
+
   camera_ts_dict = {}
   observations = [] 
   count = 0
@@ -63,14 +72,21 @@ def migrate():
       observations.append([r[0], buffer(msgpack.packb(pobs)), buffer(msgpack.packb(nobs))])
 
       count += 1
-      if count % 100000 == 0:
+      if count % 1000000 == 0:
         print count
-  camts = [[camera_ts_dict[camid][0], str(camid), int(camera_ts_dict[camid][1])] for camid in camera_ts_dict]
+        conn.executemany("insert into observations (point_idx, pos_rowid_pack, neg_rowid_pack) values (?,?,?)", observations)
+        conn.commit()
+        print 'done with %d observations' % len(observations)
+        observations = []
+
+  camts = [[camera_ts_dict[camid][0], str(camid), int(camera_ts_dict[camid][1]), camera_urls[str(camid)]] for camid in camera_ts_dict]
   camera_ts_dict = None
-  conn.executemany("insert into camera_timestamps (rowid, flickrid, timestamp) values (?,?,?)", camts)
+  conn.executemany("insert into cameras (rowid, flickrid, timestamp, url) values (?,?,?,?)", camts)
+  conn.commit()
+  print 'done with %d cameras' % len(camts)
   conn.executemany("insert into observations (point_idx, pos_rowid_pack, neg_rowid_pack) values (?,?,?)", observations)
   conn.commit()
-  print 'done with %d camera timestamps' % len(camts)
+  print 'done with %d observations' % len(observations)
 
 def main():
   createDb()
