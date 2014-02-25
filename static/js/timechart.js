@@ -94,6 +94,10 @@ TimeChart.prototype.addTicks = function(data, color, moveToY, lineToY) {
         $('#ticks_tooltip').css('left', e.clientX+'px');
         $('#ticks_tooltip').css('top', '20px');
         //console.log(camid);
+      })
+      .click(function(e) {
+        var camid = $(this).attr('alt');
+        window.open('http://flickr.com/photo.gne?id='+camid);
       });
     svgG.append(element);
   }

@@ -17,8 +17,12 @@ app = Flask(__name__)
 pointsFields = ['x','y','z','r','g','b','tmin','tmax','idx']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
-available_dataset = ['5pointz6']
-default_dataset = available_dataset[0]
+available_dataset = {
+    '5pointz6': {
+      'observations': '5pointz_ts.db'
+      },
+    }
+default_dataset = '5pointz6' #available_dataset[0]
 
 class Timer:
   def __enter__(self):
@@ -68,26 +72,28 @@ def prepareDummyTimeTicks(info):
   return ticks, camids
 
 
-def prepareTimeTicks(rows, info):
+def prepareTimeTicks(rows, info, cur):
   ticks = {'positives': [], 'negatives': []}
   tmax = info['tmax']
   tmin = info['tmin']
-  camids = Set()
+  camids = set()
+  camera_ts = {} 
   for r in rows:
-    idx = r[0]
-    is_positive_str = r[1]
-    ts_str = r[2]
-    cam_str = r[3]
-    is_positives = numpy.fromstring(is_positive_str, dtype=numpy.bool_)
-    timestamps = numpy.fromstring(ts_str, dtype=numpy.float32)
-    camera_ids = numpy.fromstring(cam_str, dtype=numpy.uint64)
-    for i in xrange(0, len(timestamps)):
-      ts = timestamps[i]
+    pos_rowids = msgpack.unpackb(r[0])
+    neg_rowids = msgpack.unpackb(r[1])
+
+    cam_rowids = list(set(pos_rowids) | set(neg_rowids))
+    cam_rowids = [str(x) for x in cam_rowids]
+    results = cur.execute('select rowid,flickrid,timestamp from camera_timestamps where rowid in ('+','.join(cam_rowids)+')')
+    for rid, fid, ts in results:
+      camera_ts[rid] = [fid, ts]
+      
+    for i in xrange(0, len(pos_rowids)):
+      rowid = pos_rowids[i]
+      camid, ts = camera_ts[rowid]
       # filter out timestamps that are out of the tmax and tmin
       if ts < tmin or ts > tmax:
         continue
-      pos = is_positives[i]
-      camid = camera_ids[i]
       if camid not in camids:
         camids.add(camid)
 
@@ -95,10 +101,20 @@ def prepareTimeTicks(rows, info):
           'timestamp': ts,
           'camid': camid
         }
-      if pos:
-        ticks['positives'].append(data)
-      else:
-        ticks['negatives'].append(data)
+      ticks['positives'].append(data)
+
+    for i in xrange(0, len(neg_rowids)):
+      rowid = neg_rowids[i]
+      camid, ts = camera_ts[rowid]
+      # filter out timestamps that are out of the tmax and tmin
+      if ts < tmin or ts > tmax:
+        continue
+
+      data = {
+          'timestamp': ts,
+          'camid': camid
+        }
+      ticks['negatives'].append(data)
 
   camids = list(camids)
   return ticks, camids
@@ -240,13 +256,17 @@ def getPtFromIdx():
     pts = [pointToJson(row) for row in rows]
     rows = c.execute('select idx,tmin,tmax,interval_str from points where idx = '+str(idx))
     times, num_rows = prepareTimeIntervals(rows, info)
+    with sqlite3.connect(available_dataset[dataset]['observations']) as con:
+      cur = con.cursor()
+      rows = cur.execute('select pos_rowid_pack,neg_rowid_pack from observations where point_idx = '+str(idx))
+      ticks, camids = prepareTimeTicks(rows, info, cur)
     #rows = c.execute('select idx,event_types_str,timestamps_str,camera_ids_str from points where idx = '+str(idx))
     #ticks, camids = prepareTimeTicks(rows, info)
 
     #comment following three lines out if we have valid ticks data 
-    ticks, camids = prepareDummyTimeTicks(info)
-    rows = c.execute('select camid from camera_urls limit 0,50')
-    camids = [str(row[0]) for row in rows]
+    #ticks, camids = prepareDummyTimeTicks(info)
+    #rows = c.execute('select camid from camera_urls limit 0,50')
+    #camids = [str(row[0]) for row in rows]
 
     rows = c.execute('select url from camera_urls where camid in ('+','.join(camids)+')')
     camera_urls = [row[0] for row in rows]
