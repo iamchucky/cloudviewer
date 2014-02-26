@@ -79,7 +79,7 @@ def prepareTimeObservations(info, idx):
     ticks = {'positives': [], 'negatives': []}
     tmax = info['tmax']
     tmin = info['tmin']
-    camera_urls = set()
+    cameras = {}
     camera_ts = {} 
     for r in rows:
       pos_rowids = msgpack.unpackb(r[0])
@@ -97,8 +97,15 @@ def prepareTimeObservations(info, idx):
         # filter out timestamps that are out of the tmax and tmin
         if ts < tmin or ts > tmax:
           continue
-        if url not in camera_urls:
-          camera_urls.add(url)
+        if camid not in cameras:
+          cameras[camid] = {
+            'url': url,
+            'R': [1, 0, 0, 0,
+                  0, 1, 0, 0,
+                  0, 0, 1, 0,
+                  0, 0, 0, 1],
+            't': [1, 1, 1]
+          }
         data = { 'timestamp': ts, 'camid': camid }
         ticks['positives'].append(data)
 
@@ -110,9 +117,9 @@ def prepareTimeObservations(info, idx):
           continue
         data = { 'timestamp': ts, 'camid': camid }
         ticks['negatives'].append(data)
+  cameras = [cameras[id] for id in cameras]
 
-    camera_urls = list(camera_urls)
-  return ticks, camera_urls
+  return ticks, cameras
 
 
 def prepareTimeIntervals(rows, info):
@@ -251,9 +258,9 @@ def getPtFromIdx():
     pts = [pointToJson(row) for row in rows]
     rows = c.execute('select idx,tmin,tmax,interval_str from points where idx = '+str(idx))
     times, num_rows = prepareTimeIntervals(rows, info)
-    ticks, camera_urls = prepareTimeObservations(info, idx)
+    ticks, cameras = prepareTimeObservations(info, idx)
 
-    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks, 'camera_urls': camera_urls})
+    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks, 'cameras': cameras})
   finally:
     conn.close()
 

@@ -91,7 +91,7 @@ CloudViewer.prototype.setupGL = function() {
         if (cv.timeChart && data['time_intervals']) {
           cv.timeChart.draw(data, params.tmax, params.tmin);
           $('#top_container').css('top','0px');
-          cv.loadPhotos(data['camera_urls']);
+          cv.loadPhotos(data['cameras']);
         }
       }
     });
@@ -107,7 +107,6 @@ CloudViewer.prototype.setupGL = function() {
     var mx = GL.Matrix.rotate(dy*rotateSpeed, xDir.x, xDir.y, xDir.z); 
     var my = GL.Matrix.rotate(dx*rotateSpeed, yDir.x, yDir.y, yDir.z); 
     params.rotation = params.rotation.multiply(my).multiply(mx);
-    cv.trackball.rotation = params.rotation;
   };
 
   gl.onmouseup = function(e) {
@@ -409,45 +408,45 @@ CloudViewer.prototype.setupDatGui = function() {
   this.gui = gui;
 };
 
-CloudViewer.prototype.loadPhotos = function(photoUrls) {
+CloudViewer.prototype.loadPhotos = function(cameras) {
   if (this.params.currPointId == -1) {
     return;
   }
 
   $('#photo_strip').off('scroll');
-  var photoCount = Math.min(Math.ceil($(window).width()/206)+1, photoUrls.length);
+  var photoCount = Math.min(Math.ceil($(window).width()/206)+1, cameras.length);
   var photoStripContainer = $('#photo_strip ul');
   photoStripContainer.empty();
   photoStripContainer.css('width', photoCount*206+'px');
   var start = 0;
 
   // populate the photos
-  this.populatePhotostrip(photoUrls, start, photoCount);
+  this.populatePhotostrip(cameras, start, photoCount);
   start += photoCount;
   
   // load additional photos when scroll to the end
   $('#photo_strip').on('scroll', function(e) {
     var endScrollLeft = photoCount*206 - $(window).width() + 8;
     if ($(this).scrollLeft() >= endScrollLeft) {
-      if (start >= photoUrls.length) {
+      if (start >= cameras.length) {
         return;
       }
       // load at least 5 more photos
-      var newPhotoCount = Math.min(5, photoUrls.length-photoCount);
+      var newPhotoCount = Math.min(5, cameras.length-photoCount);
       photoCount += newPhotoCount;
       photoStripContainer.css('width', photoCount*206+'px');
-      cloudViewer.populatePhotostrip(photoUrls, start, photoCount);
+      cloudViewer.populatePhotostrip(cameras, start, photoCount);
       start += newPhotoCount;
     }
   });
   $('#photo_strip').scrollLeft(0);
 };
 
-CloudViewer.prototype.populatePhotostrip = function(photoUrls, start, count) {
+CloudViewer.prototype.populatePhotostrip = function(cameras, start, count) {
   var photoStripContainer = $('#photo_strip ul');
   for (var i = start; i < count; ++i) {
-    var url = photoUrls[i];
-    var elem = $('<li url="'+url+'" style="background-image:url('+url+')"></li>')
+    var url = cameras[i].url;
+    var elem = $('<li cid="'+i+'" style="background-image:url('+url+')"></li>')
       .hover(function() {
         $(this).addClass('hover');
       }, function() {
@@ -456,10 +455,17 @@ CloudViewer.prototype.populatePhotostrip = function(photoUrls, start, count) {
     var blockElem = $('<div></div>')
       .click(function() {
         // click to switch to camera's viewpoint;
+        var cid = $(this).parent().attr('cid');
+        var R = cameras[cid].R;
+        var t = cameras[cid].t;
+        cloudViewer.params.center = new GL.Vector(t[0], t[1], t[2]);
+        cloudViewer.params.rotation = new GL.Matrix(R);
+        cloudViewer.glInvalidate = true;
       });
     var zoomElem = $('<i class="fa fa-search"></i>')
       .click(function() {
-        $('#photo_viewer > img').attr('src', $(this).parent().attr('url'));
+        var cid = $(this).parent().attr('cid');
+        $('#photo_viewer > img').attr('src', cameras[cid].url);
         $('#photo_viewer').show();
       });
     elem.append(blockElem);
@@ -598,7 +604,6 @@ CloudViewer.prototype.rotateWorldWithSphere = function(x, y, dx, dy) {
 
   var m = GL.Matrix.rotate(-angle, axis[0], axis[1], axis[2]); 
   params.rotation = params.rotation.multiply(m);
-  this.trackball.rotation = params.rotation;
 };
 
 CloudViewer.prototype.panWorldXY = function(x, y, dx, dy) {
