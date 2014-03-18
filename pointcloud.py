@@ -14,12 +14,12 @@ import os
 from flask import Flask, jsonify, Response, render_template, request
 app = Flask(__name__)
 
-pointsFields = ['x','y','z','r','g','b','tmin','tmax','idx']
+pointsFields = ['x','y','z','r','g','b','idx']
 camerasFields = ['f','k1','k2','R11','R12','R13','R21','R22','R23','R31','R32','R33','t1','t2','t3','fovy','aspect']
 
-available_dataset = ['5pointz6']
+available_dataset = ['5pointz6_lite']
 observations = {
-    '5pointz6': '5pointz_obs.db',
+    '5pointz6_lite': '5pointz_obs.db',
     }
 default_dataset = available_dataset[0]
 
@@ -254,13 +254,10 @@ def getPtFromIdx():
 
   try:
     c = conn.cursor()
-    rows = c.execute('select '+','.join(pointsFields)+' from points where idx = '+str(idx))
+    rows = c.execute('select '+','.join(pointsFields)+' from points where rowid = '+str(idx))
     pts = [pointToJson(row) for row in rows]
-    rows = c.execute('select idx,tmin,tmax,interval_str from points where idx = '+str(idx))
-    times, num_rows = prepareTimeIntervals(rows, info)
-    ticks, cameras = prepareTimeObservations(info, idx)
 
-    return jsonify({'points': pts, 'time_intervals': times, 'num_rows': num_rows, 'ticks': ticks, 'cameras': cameras})
+    return jsonify({'points': pts})
   finally:
     conn.close()
 

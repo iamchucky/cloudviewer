@@ -1,6 +1,5 @@
 var Parameters = function() {
   this.cameraZ = 10.0;
-  this.time = 0;
   this.rotation = GL.Matrix.identity();
   this.center = new GL.Vector(0, 0, 0);
   this.near = 0.5;
@@ -14,15 +13,9 @@ var Parameters = function() {
     cloudViewer.trackball.invRotation = cloudViewer.params.rotation.inverse();
   };
   this.dataset = '';
-  this.showPhotoStrip = false;
   this.currPointId = -1;
   this.showFps = true;
   this.roundPoints = false;
-  this.showClusterId = false;
-  this.currClusterId1 = -2.0;
-  this.currClusterId2 = -2.0;
-  this.clusterColor1 = '#ff0000';
-  this.clusterColor2 = '#ffffff';
   this.showShortkeyHelp = true;
 };
 
@@ -34,7 +27,6 @@ var CloudViewer = function() {
   this.glInvalidate = true;
   this.enable_glInvalidate = true;
   this.params = new Parameters();
-  this.timeChart = null;
   this.trackball = null;
   this.stats = null;
   this.shaders = null;;
@@ -86,13 +78,6 @@ CloudViewer.prototype.setupGL = function() {
         var pointData = data['points'][0];
         params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
         cv.glInvalidate = true;
-
-        cv.fillPointMeta(pointData);
-        if (cv.timeChart && data['time_intervals']) {
-          cv.timeChart.draw(data, params.tmax, params.tmin);
-          $('#top_container').css('top','0px');
-          cv.loadPhotos(data['cameras']);
-        }
       }
     });
     cv.glInvalidate = true;
@@ -140,30 +125,6 @@ CloudViewer.prototype.setupGL = function() {
         cv.rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
       }
       cv.glInvalidate = true;
-    }
-
-    if (!e.dragging && (e.ctrlKey || e.altKey) && cloudViewer.params.showClusterId) {
-      cloudViewer.renderIdMap(cloudViewer.shaders.clusterId);
-      var x = e.x | e.clientX;
-      var y = e.y | e.clientY;
-      var pointId = cloudViewer.sampleIdMap(x, y, gl.canvas.width, gl.canvas.height);
-      if (pointId == 0) {
-        if (e.ctrlKey) {
-          params.currClusterId1 = -2.0;
-        } else {
-          params.currClusterId2 = -2.0;
-        }
-        cv.glInvalidate = true;
-        gl.ondraw();
-        return;
-      }
-      if (e.ctrlKey) {
-        params.currClusterId1 = Math.floor(pointId/256.0);
-      } else {
-        params.currClusterId2 = Math.floor(pointId/256.0);
-      }
-      cv.glInvalidate = true;
-      gl.ondraw();
     }
   };
 
@@ -261,7 +222,6 @@ CloudViewer.prototype.setupShaders = function() {
   // Define all shaders
   this.shaders = {
     pointId: new GL.Shader(glsl.pointId.vertex, glsl.pointId.fragment),
-    clusterId: new GL.Shader(glsl.clusterId.vertex, glsl.clusterId.fragment),
     camera: new GL.Shader(glsl.camera.vertex, glsl.camera.fragment),
     particle: new GL.Shader(glsl.particle.vertex, glsl.particle.fragment)
   };
@@ -276,101 +236,41 @@ CloudViewer.prototype.setupUI = function() {
   this.stats = stats;
 
   this.setupDatGui();
-
-  $('#photo_viewer').click(function() {
-    $('#photo_viewer').hide();
-  });
-  $('#photo_viewer > img').css('max-width', $(window).width()*0.8+'px');
-  $('#photo_viewer > img').css('max-height', $(window).height()*0.8+'px');
-
-  // setup the time player
-  var timelapseHandle = null;
-  var startTimelapse = function() {
-    if ($('#time_seekbar').val() == $('#time_seekbar').attr('max')) {
-      params.time = parseFloat($('#time_seekbar').attr('min'));
-      $('#time_seekbar').val(params.time);
-    }
-
-    $('#play_pause').removeClass('fa-play').addClass('fa-pause');
-    var playbackInterval = setInterval(function() {
-      if (params.time > $('#time_seekbar').attr('max')) {
-        pauseTimelapse();
-        return;
-      }
-      params.time += 24*3600.0;
-      $('#current_time').text(utils.unixTimeToHumanDateStr(params.time));
-      $('#time_seekbar').val(params.time);
-      cv.glInvalidate = true;
-    }, 50);
-    return playbackInterval;
-  };
-  var pauseTimelapse = function() {
-    $('#play_pause').removeClass('fa-pause').addClass('fa-play');
-    clearInterval(timelapseHandle);
-  };
-
-  $('#play_pause').click(function() {
-    var classes = $(this).attr('class');
-    if (classes.match(/fa-pause/g)) {
-      pauseTimelapse();
-    } else {
-      timelapseHandle = startTimelapse();
-    }
-  });
 };
 
 CloudViewer.prototype.setupDatGui = function() {
   var cv = this;
   var params = this.params;
   var gl = this.gl;
-  var gui = new dat.GUI({ autoPlace: false });
-  document.getElementById('dat_gui_container').appendChild(gui.domElement);
+  var gui = new dat.GUI();
 
-  var clustersFolder = gui.addFolder('Clusters');
-  clustersFolder.add(params, 'showClusterId')
-    .name('color by cluster')
-    .onChange(function(val) {
-      cv.glInvalidate = true;
-    });
-  clustersFolder.addColor(params, 'clusterColor1')
-    .name('color1')
-    .onChange(function(val) {
-      cv.glInvalidate = true;
-    });
-  clustersFolder.addColor(params, 'clusterColor2')
-    .name('color2')
-    .onChange(function(val) {
-      cv.glInvalidate = true;
-    });
-  clustersFolder.open();
-
-  cv.guiZoom = gui.add(params, 'cameraZ', 1.0, 2048.0)
+  var cameraFolder = gui.addFolder('Camera');
+  cv.guiZoom = cameraFolder.add(params, 'cameraZ', 1.0, 2048.0)
     .name('camera z')
     .onChange(function(val) {
       cv.glInvalidate = true;
     });
-  gui.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
+  cameraFolder.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
     cv.glInvalidate = true;
   });
-  gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
+  cameraFolder.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
     cv.glInvalidate = true;
   });
-  cv.guiPointSize = gui.add(params, 'pointSize', 1.0, 512.0)
+  cv.guiPointSize = cameraFolder.add(params, 'pointSize', 1.0, 512.0)
     .name('point size')
     .onChange(function(val) {
       cv.glInvalidate = true;
     });
+  cameraFolder.open();
+
   gui.add(params, 'resetTrackball')
     .name('reset trackball')
     .onChange(function(val) {
       cv.glInvalidate = true;
     });
-  gui.add(params,'roundPoints').name('rounded points')
-    .onChange(function(val) {
-      cv.glInvalidate = true;
-    });
+  /*
   gui.add(params, 'showFps')
     .name('fps')
     .onFinishChange(function(val) {
@@ -389,108 +289,8 @@ CloudViewer.prototype.setupDatGui = function() {
         $('#shortkey_help').hide();
       }
     });
-  gui.add(params, 'showPhotoStrip')
-    .name('photostrip')
-    .onChange(function(val) {
-      var photoStripBottom = val ? 0:-130; 
-      $('#bottom_container').css('bottom', photoStripBottom + 'px');
-      setTimeout(function() {
-        gl.fullscreen({
-          providedCanvas: true, 
-          near: params.near, 
-          far: params.far, 
-          fov: 45,
-          paddingBottom: photoStripBottom + 130
-        });
-        cv.glInvalidate = true;
-      }, val?200:0);
-    });
+    */
   this.gui = gui;
-};
-
-CloudViewer.prototype.loadPhotos = function(cameras) {
-  if (this.params.currPointId == -1) {
-    return;
-  }
-
-  $('#photo_strip').off('scroll');
-  var photoCount = Math.min(Math.ceil($(window).width()/206)+1, cameras.length);
-  var photoStripContainer = $('#photo_strip ul');
-  photoStripContainer.empty();
-  photoStripContainer.css('width', photoCount*206+'px');
-  var start = 0;
-
-  // populate the photos
-  this.populatePhotostrip(cameras, start, photoCount);
-  start += photoCount;
-  
-  // load additional photos when scroll to the end
-  $('#photo_strip').on('scroll', function(e) {
-    var endScrollLeft = photoCount*206 - $(window).width() + 8;
-    if ($(this).scrollLeft() >= endScrollLeft) {
-      if (start >= cameras.length) {
-        return;
-      }
-      // load at least 5 more photos
-      var newPhotoCount = Math.min(5, cameras.length-photoCount);
-      photoCount += newPhotoCount;
-      photoStripContainer.css('width', photoCount*206+'px');
-      cloudViewer.populatePhotostrip(cameras, start, photoCount);
-      start += newPhotoCount;
-    }
-  });
-  $('#photo_strip').scrollLeft(0);
-};
-
-CloudViewer.prototype.populatePhotostrip = function(cameras, start, count) {
-  var photoStripContainer = $('#photo_strip ul');
-  for (var i = start; i < count; ++i) {
-    var url = cameras[i].url;
-    var elem = $('<li cid="'+i+'" style="background-image:url('+url+')"></li>')
-      .hover(function() {
-        $(this).addClass('hover');
-      }, function() {
-        $(this).removeClass('hover');
-      });
-    var blockElem = $('<div></div>')
-      .click(function() {
-        // click to switch to camera's viewpoint;
-        var cid = $(this).parent().attr('cid');
-        var R = cameras[cid].R;
-        var t = cameras[cid].t;
-        cloudViewer.params.center = new GL.Vector(t[0], t[1], t[2]);
-        cloudViewer.params.rotation = new GL.Matrix(R);
-        cloudViewer.glInvalidate = true;
-      });
-    var zoomElem = $('<i class="fa fa-search"></i>')
-      .click(function() {
-        var cid = $(this).parent().attr('cid');
-        $('#photo_viewer > img').attr('src', cameras[cid].url);
-        $('#photo_viewer').show();
-      });
-    elem.append(blockElem);
-    elem.append(zoomElem);
-    photoStripContainer.append(elem);
-  }
-};
-
-CloudViewer.prototype.fillPointMeta = function(data) {
-  for (var d in data) {
-    var val = 0;
-    if (d == 'r' || d == 'g' || d == 'b' || d == 'idx') {
-      val = data[d];
-    } else if (d == 'x' || d == 'y' || d == 'z') {
-      val = data[d].toFixed(3);
-    } else if (d == 'tmin' || d == 'tmax') {
-      val = utils.unixTimeToHumanDateStr(data[d]);
-    }
-    $('#point_meta_' + d).html(
-        '<div style="width:100%">'+
-          '<div style="width:40px">'+d+'</div>'+
-          '<div style="margin-left:10px">'+val+'</div>'+
-        '</div>');
-  }
-  $('#point_meta').show();
 };
 
 CloudViewer.prototype.renderIdMap = function(shader) {
@@ -516,15 +316,10 @@ CloudViewer.prototype.renderScene = function(shader) {
 
   var params = this.params;
   var uniforms = { 
-    cluster1: params.showClusterId ? params.currClusterId1 : -1.0,
-    cluster2: params.showClusterId ? params.currClusterId2 : -1.0,
-    clusterColor1: parseInt(params.clusterColor1.replace('#',''), 16),
-    clusterColor2: parseInt(params.clusterColor2.replace('#',''), 16),
     round: params.roundPoints ? 1.0 : 0.0,
     size: params.pointSize,
     near: params.near, 
-    far: params.far, 
-    time: params.time 
+    far: params.far 
   };
   for (var i = 0; i < this.particleSystem.length; i++) {
     shader.uniforms(uniforms)
@@ -541,7 +336,6 @@ CloudViewer.prototype.renderCameras = function() {
     this.shaders.camera.draw(this.cameras[i], this.gl.LINES); 
   }
 };
-
 
   // Code from MeshLab source at 
   // https://github.com/kylemcdonald/ofxVCGLib/blob/master/vcglib/wrap/gui/trackutils.h
@@ -668,25 +462,13 @@ CloudViewer.prototype.fetchParticles = function(chunkId, allDoneCallback, callba
       var floatArray = new Float32Array(this.response);
       var posArray = floatArray.subarray(0, 3*chunkSize);
       var colorArray = floatArray.subarray(3*chunkSize, 6*chunkSize);
-      var timeArray = floatArray.subarray(6*chunkSize, 8*chunkSize);
-      var clusterIdArray = floatArray.subarray(8*chunkSize, 9*chunkSize);
-      var clusterColorArray = floatArray.subarray(9*chunkSize, 10*chunkSize);
-      var idxArray = floatArray.subarray(10*chunkSize, floatArray.length);
+      var idxArray = floatArray.subarray(6*chunkSize, floatArray.length);
       var posBuffer = cv.createBuffer(posArray, 3);
       var colorBuffer = cv.createBuffer(colorArray, 3);
-      var timeBuffer = cv.createBuffer(timeArray, 2);
-      var clusterIdBuffer = cv.createBuffer(clusterIdArray, 1);
-      var clusterColorBuffer = cv.createBuffer(clusterColorArray, 1);
       var idxBuffer = cv.createBuffer(idxArray, 1);
       var ps = new GL.Mesh({triangles:false, colors:true});
       ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
       ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
-      ps.addVertexBuffer('times', 't_range');
-      ps.vertexBuffers['t_range'].buffer = timeBuffer;
-      ps.addVertexBuffer('clusterIds', 'clusterId');
-      ps.vertexBuffers['clusterId'].buffer = clusterIdBuffer;
-      ps.addVertexBuffer('clusterColors', 'clusterColor');
-      ps.vertexBuffers['clusterColor'].buffer = clusterColorBuffer;
       ps.addVertexBuffer('idxs', 'idx');
       ps.vertexBuffers['idx'].buffer = idxBuffer;
       cv.particleSystem.push(ps);
@@ -708,37 +490,10 @@ CloudViewer.prototype.getInfo = function() {
   var cv = this;
   var params = this.params;
   $.getJSON('api/getInfo?dataset='+params.dataset, function(data) {
-    params.time = (data.tmin + data.tmax) / 2;
-    params.tmax = data.tmax;
-    params.tmin = data.tmin;
     params.camCount = 0;//data.camCount;
     params.ptCount = data.ptCount;
     params.chunkCount = data.chunkCount;
     params.chunkSize = data.chunkSize;
-
-    // setup gui control
-    $('#current_time').text(utils.unixTimeToHumanDateStr(params.time));
-    $('#time_seekbar')
-      .attr('max', data.tmax)
-      .attr('min', data.tmin)
-      .change(function(e) {
-        params.time = parseFloat($(this).val());
-        $('#current_time').text(utils.unixTimeToHumanDateStr(params.time));
-        cv.glInvalidate = true;
-      })
-      .mousemove(function(e) {
-        var offset = e.offsetX;
-        var min = parseInt($(this).attr('min'));
-        var timespan = parseInt($(this).attr('max')) - min;
-        var width = this.clientWidth;
-        var sw = 20;  // slider thumb width
-        var sw2 = sw/2;
-        var date = Math.floor((Math.min(Math.max(sw2, e.offsetX), width-sw2)-sw2) / (width-sw) * timespan) + min;
-        $('#time_tooltip').text(utils.unixTimeToHumanDateStr(date));
-        var widthOffset = $('#time_tooltip')[0].clientWidth / 2;
-        $('#time_tooltip').css('left', e.clientX-widthOffset+'px');
-      })
-      .val(params.time);
 
     // now get all the cameras then points
     cv.fetchCameras(0, cv.fetchParticles, [0, function() {

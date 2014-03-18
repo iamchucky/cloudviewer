@@ -1,13 +1,10 @@
 {% extends "layout.html" %}
 {% block body %}
-<script type="text/javascript" src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization',
-       'version':'1','packages':['timeline']}]}"></script>
 <script src="../static/js/dat.gui.min.js"></script>
 <script src="../static/js/stats.min.js"></script>
 <script src="../static/js/lightgl.js"></script>
 
 <script src="../static/js/utils.js"></script>
-<script src="../static/js/timechart.js"></script>
 <script src="../static/js/camera.js"></script>
 <script src="../static/js/trackball.js"></script>
 <script src="../static/js/glsl.js"></script>
@@ -16,8 +13,10 @@
 
 <canvas id="canvas"></canvas>
 <div id="top_container">
-  <div id="time_chart"></div>
-  <div id="ticks_tooltip"></div>
+  <div id="loading_text"><i class="fa fa-spinner fa-spin"></i> Loading...</div>
+</div>
+<div id="dataset" style="display:none">{{dataset}}</div>
+<div id="bottom_container">
   <div id="shortkey_help">
     <ul>
       <li><div style="width:100%;"><div style="width:80px;">pan:</div><div style="margin-left:10px">middle mouse-drag or ctrl+left mouse-drag</div></div></li>
@@ -27,32 +26,6 @@
       <li><div style="width:100%;"><div style="width:80px;">point size:</div><div style="margin-left:10px">alt+scroll</div></div></li>
     </ul>
   </div>
-  <div id="loading_text"><i class="fa fa-spinner fa-spin"></i> Loading...</div>
 </div>
-<div id="dataset" style="display:none">{{dataset}}</div>
-<div id="bottom_container">
-  <ul id="point_meta">
-    <li id='point_meta_idx'></li>
-    <li id='point_meta_x'></li>
-    <li id='point_meta_y'></li>
-    <li id='point_meta_z'></li>
-    <li id='point_meta_r'></li>
-    <li id='point_meta_g'></li>
-    <li id='point_meta_b'></li>
-    <li id='point_meta_tmin'></li>
-    <li id='point_meta_tmax'></li>
-  </ul>
-  <div id="playback_control"><i id="play_pause" class="fa fa-play"></i></div>
-  <input type="range" id="time_seekbar" step="1">
-  <div id="photo_strip_container">
-  <div id="photo_strip"><ul>
-    <li style="font-size:x-large; width:99%; text-align:center; margin-top:40px; color:gray; cursor:default;">Double-click on a point to load the photos.</li>
-  </ul></div>
-  </div>
-  <div id="time_tooltip"></div>
-  <div id="current_time"></div>
-  <div id="dat_gui_container"></div>
-</div>
-<div id="photo_viewer"><img></img></div>
 
 {% endblock %}

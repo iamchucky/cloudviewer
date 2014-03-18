@@ -24,14 +24,14 @@ body {
 
 #top_container {
   position: fixed;
-  top: -100px;
+  top: 0px;
   width: 100%;
   transition: top 0.2s;
 }
 
 #shortkey_help {
   position: absolute;
-  top: 100px;
+  bottom: 0px;
   left: 0px;
   height: 105px;
   color: white;
@@ -53,7 +53,7 @@ body {
 #loading_text {
   position: absolute;
   color: white;
-  top: 110px;
+  top: 10px;
   left: 50%;
   width: 80px;
   margin-left: -40px;
@@ -94,13 +94,14 @@ body {
 
 #stats {
   position: absolute;
-  top: 100px;
-  right: 0px;
+  top: 0px;
+  left: 0px;
 }
 
 #bottom_container {
   position: fixed;
-  bottom: -130px;
+  bottom: 0px;
+  width: 100%;
   transition: bottom 0.2s;
 }
 
@@ -200,6 +201,12 @@ body {
   box-sizing: initial;
 }
 #dat_gui_container input {
+  line-height: normal;
+}
+.dg *, .dg *:before, .dg *:after {
+  box-sizing: initial;
+}
+.dg input {
   line-height: normal;
 }
 
