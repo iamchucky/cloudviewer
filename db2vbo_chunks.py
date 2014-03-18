@@ -60,7 +60,7 @@ def writeChunk(filename, start, num):
     rows = c.execute('select clustercolor from points limit '+str(start)+','+str(num))
     clustercolors = rowsToBytes(rows)
     # idx based on the row index in the db
-    rows = c.execute('select rowid from points limit '+str(start)+','+str(num))
+    rows = c.execute('select idx from points limit '+str(start)+','+str(num))
     idxs = rowsToBytes(rows)
 
     with gzip.open(filename, 'wb') as wf:
