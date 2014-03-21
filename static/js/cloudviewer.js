@@ -13,9 +13,8 @@ var Parameters = function() {
     cloudViewer.trackball.invRotation = cloudViewer.params.rotation.inverse();
   };
   this.dataset = '';
-  this.currPointId = -1;
   this.showFps = true;
-  this.roundPoints = false;
+  this.roundPoints = true;
   this.showShortkeyHelp = true;
 };
 
@@ -32,6 +31,7 @@ var CloudViewer = function() {
   this.shaders = null;;
 
   this.particleSystem = [];
+  this.particlePositions = {};
   this.cameras = [];
 };
 
@@ -72,14 +72,8 @@ CloudViewer.prototype.setupGL = function() {
       gl.ondraw();
       return;
     }
-    params.currPointId = pointId;
-    $.getJSON('api/getPtFromIdx?dataset='+params.dataset+'&idx='+pointId, function(data) {
-      if (data) {
-        var pointData = data['points'][0];
-        params.center = new GL.Vector(pointData['x'], pointData['y'], pointData['z']);
-        cv.glInvalidate = true;
-      }
-    });
+    var pos = cv.particlePositions[pointId];
+    params.center = new GL.Vector(pos[0], pos[1], pos[2]);
     cv.glInvalidate = true;
     gl.ondraw();
   };
@@ -472,6 +466,13 @@ CloudViewer.prototype.fetchParticles = function(chunkId, allDoneCallback, callba
       ps.addVertexBuffer('idxs', 'idx');
       ps.vertexBuffers['idx'].buffer = idxBuffer;
       cv.particleSystem.push(ps);
+      for (var i = 0, j = 0; j < chunkSize; i+=3, j++) {
+        var x = posArray[i];
+        var y = posArray[i+1];
+        var z = posArray[i+2];
+        var idx = idxArray[j]
+        cv.particlePositions[parseInt(idx)] = [x, y, z];
+      }
 
       cv.glInvalidate = true;
       if (chunkId < params.chunkCount-1) {
