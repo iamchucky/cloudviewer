@@ -31,7 +31,7 @@ var CloudViewer = function() {
   this.shaders = null;;
 
   this.particleSystem = [];
-  this.particlePositions = {};
+  this.particlePositions = null;
   this.cameras = [];
 };
 
@@ -72,7 +72,8 @@ CloudViewer.prototype.setupGL = function() {
       gl.ondraw();
       return;
     }
-    var pos = cv.particlePositions[pointId];
+
+    var pos = cv.particlePositions.subarray(pointId*3, pointId*3+3);
     params.center = new GL.Vector(pos[0], pos[1], pos[2]);
     cv.glInvalidate = true;
     gl.ondraw();
@@ -532,6 +533,7 @@ CloudViewer.prototype.parsePly = function(content) {
     idxArray[j] = j;
   }
 
+  this.particlePositions = posArray;
   var posBuffer = this.createBuffer(posArray, 3);
   var colorBuffer = this.createBuffer(colorArray, 3);
   var idxBuffer = this.createBuffer(idxArray, 1);
