@@ -466,7 +466,6 @@ CloudViewer.prototype.parsePly = function(content) {
 
   var vertexElements = {
     properties: [],
-    elements: [],
     count: 0
   };
   var formatPattern = /^format (ascii|binary_little_endian).*/;
@@ -542,9 +541,15 @@ CloudViewer.prototype.parsePly = function(content) {
   ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
   ps.addVertexBuffer('idxs', 'idx');
   ps.vertexBuffers['idx'].buffer = idxBuffer;
+  this.particleSystem = [];
   this.particleSystem.push(ps);
   this.glInvalidate = true;
-  return vertexElements;
+
+  // cleanup
+  header = null;
+  body = null;
+  colorArray = null;
+  idxArray = null;
 };
 
 CloudViewer.prototype.fetchCameras = function(start, allDoneCallback, callbackArgs) {
