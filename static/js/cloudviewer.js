@@ -230,6 +230,41 @@ CloudViewer.prototype.setupUI = function() {
   this.stats = stats;
 
   this.setupDatGui();
+
+  document.addEventListener('dragenter', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    $('#canvas').css('opacity', '0.1');
+  }, false);
+  document.addEventListener('dragleave', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    $('#canvas').css('opacity', '1');
+  }, false);
+  document.addEventListener('dragover', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }, false);
+  document.addEventListener('drop', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    $('#canvas').css('opacity', '1');
+
+    var files = e.dataTransfer.files;
+    for (var i = 0, f; f = files[i]; i++) {
+      var reader = new FileReader();
+      reader.onload = function(theFile) {
+        return function(e) {
+          console.log(theFile.name);
+          console.log(e.target.result);
+        };
+      }(f);
+      reader.readAsText(f);
+    }
+  }, false);
 };
 
 CloudViewer.prototype.setupDatGui = function() {
