@@ -10,13 +10,8 @@ $(function() {
   });
 
   cloudViewer = new CloudViewer();
-  cloudViewer.params.dataset = $('#dataset').text();
 
   // proceed with WebGL
   cloudViewer.setupGL();
   cloudViewer.setupUI();
-
-  // call getInfo to get everything started.
-  // getInfo calls fetchCameras and then fetchParticles
-  cloudViewer.getInfo();
 });

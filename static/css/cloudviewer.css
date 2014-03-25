@@ -38,9 +38,16 @@ body {
   background-color: rgba(0,0,0,0.5);
   margin: 10px;
   border-radius: 10px;
+
+  cursor: default;
 }
 
 #shortkey_help ul {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -moz-user-select: none;
+
   list-style: none;
   padding: 10px;
   margin: 0;
@@ -58,6 +65,8 @@ body {
   width: 80px;
   margin-left: -40px;
   text-shadow: 0 0 5px black;
+
+  display: none;
 }
 
 #time_chart {
@@ -202,6 +211,13 @@ body {
 }
 #dat_gui_container input {
   line-height: normal;
+}
+
+.dg {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -moz-user-select: none;
 }
 .dg *, .dg *:before, .dg *:after {
   box-sizing: initial;
