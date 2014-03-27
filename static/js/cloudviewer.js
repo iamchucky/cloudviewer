@@ -259,8 +259,7 @@ CloudViewer.prototype.setupUI = function() {
       var reader = new FileReader();
       reader.onload = function(theFile) {
         return function(e) {
-          cv.parsePly(e.target.result);
-          console.log(theFile.name);
+          var loader = new PlyLoader(e.target.result);
         };
       }(f);
       reader.readAsText(f);
@@ -452,104 +451,6 @@ CloudViewer.prototype.createBuffer = function(array, spacing) {
   gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
   gl.bufferData (gl.ARRAY_BUFFER, array, gl.STATIC_DRAW); 
   return buffer;
-};
-
-CloudViewer.prototype.parsePly = function(content) {
-  var headbodySplits = content.split("end_header\n");
-  if (headbodySplits.length < 1) {
-    alert('invalid ply file format');
-    return;
-  }
-
-  var header = headbodySplits[0].split("\n");
-  var body = headbodySplits[1].split("\n");
-
-  var vertexElements = {
-    properties: [],
-    count: 0
-  };
-  var formatPattern = /^format (ascii|binary_little_endian).*/;
-  var elementPattern = /element (\w*) (\d*)/;
-  var propertyPattern = /property (char|uchar|short|ushort|int|uint|float|double) (\w*)/;
-
-  while (header.length > 0) {
-    var line = header.shift();
-
-    if (line === 'ply') {
-      console.log(line);
-    } else if (line.search(formatPattern) >= 0) {
-      var result = line.match(formatPattern);
-      console.log('fileformat: '+result[1]);
-    } else if (line.search(elementPattern) >= 0) {
-      var result = line.match(elementPattern);
-      var name = result[1];
-
-      if (name !== 'vertex') {
-        alert('only ply file works');
-        return;
-      }
-      vertexElements.count = parseInt(result[2]);
-
-      while (header[0].search(propertyPattern) >= 0) {
-        var result = header.shift().match(propertyPattern);
-        var type = result[1];
-        var name = result[2];
-        vertexElements.properties.push(name);
-      }
-      break;
-    }
-  }
-
-  var posArray = new Float32Array(vertexElements.count * 3);
-  var colorArray = new Float32Array(vertexElements.count * 3);
-  var idxArray = new Float32Array(vertexElements.count);
-
-  var vcount = vertexElements.count;
-  var vprops = vertexElements.properties;
-  var vpropsLength = vprops.length;
-
-  for (var j = 0; j < vcount; ++j) {
-    var split = body[j].split(' ');
-    
-    for (var i = 0; i < vpropsLength; ++i) {
-      var prop = vprops[i];
-      if (prop != 'x' && prop != 'y' && prop != 'z') {
-        continue;
-      }
-
-      var val = parseFloat(split[i]);
-      if (prop == 'x') {
-        posArray[j * 3] = val;
-      } else if (prop == 'y') {
-        posArray[j * 3 + 1] = val;
-      } else if (prop == 'z') {
-        posArray[j * 3 + 2] = val;
-      }
-    }
-    colorArray[j * 3] = 1.0;
-    colorArray[j * 3 + 1] = 1.0;
-    colorArray[j * 3 + 2] = 1.0;
-    idxArray[j] = j;
-  }
-
-  this.particlePositions = posArray;
-  var posBuffer = this.createBuffer(posArray, 3);
-  var colorBuffer = this.createBuffer(colorArray, 3);
-  var idxBuffer = this.createBuffer(idxArray, 1);
-  var ps = new GL.Mesh({triangles:false, colors:true});
-  ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
-  ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
-  ps.addVertexBuffer('idxs', 'idx');
-  ps.vertexBuffers['idx'].buffer = idxBuffer;
-  this.particleSystem = [];
-  this.particleSystem.push(ps);
-  this.glInvalidate = true;
-
-  // cleanup
-  header = null;
-  body = null;
-  colorArray = null;
-  idxArray = null;
 };
 
 CloudViewer.prototype.fetchCameras = function(start, allDoneCallback, callbackArgs) {
