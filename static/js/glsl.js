@@ -33,18 +33,6 @@ var glsl = {
       }'
   },
 
-  camera: {
-    vertex: '\
-      void main() {\
-        gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-      }'
-    ,
-    fragment: '\
-      void main() {\
-        gl_FragColor = vec4(0.5, 0.25, 0.5, 1.0);\
-      }'
-  },
-
   pointId: {
     vertex: '\
       attribute vec2 t_range;\

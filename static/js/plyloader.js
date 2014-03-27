@@ -15,6 +15,7 @@ PlyLoader.prototype.parse = function(content) {
     return;
   }
 
+
   this.header = headbodySplits[0].split("\n");
   this.body = headbodySplits[1].split("\n");
   this.parseHeader();
@@ -22,7 +23,7 @@ PlyLoader.prototype.parse = function(content) {
 };
 
 PlyLoader.prototype.parseHeader = function() {
-  var formatPattern = /^format (ascii|binary_little_endian).*/;
+  var formatPattern = /^format (ascii|binary_little_endian|binary_big_endian).*/;
   var elementPattern = /element (\w*) (\d*)/;
   var propertyPattern = /property (char|uchar|short|ushort|int|uint|float|double) (\w*)/;
 
@@ -57,7 +58,8 @@ PlyLoader.prototype.parseHeader = function() {
 PlyLoader.prototype.parseBody = function() {
   var cv = cloudViewer;
 
-  var worker = new Worker('static/js/parsebody.js');
+  var blob = new Blob([$('#parse_plybody')[0].textContent]);
+  var worker = new Worker(window.URL.createObjectURL(blob));
   worker.addEventListener('message', function(e) {
     var data = e.data;
 

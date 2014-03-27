@@ -5,14 +5,9 @@ var Parameters = function() {
   this.near = 0.5;
   this.far = 2500.0;
   this.pointSize = 1.0;
-  this.camCount = 0;
-  this.ptCount = 0;
-  this.chunkCount = 0;
-  this.chunkSize = 0;
   this.resetTrackball = function() {
     cloudViewer.trackball.invRotation = cloudViewer.params.rotation.inverse();
   };
-  this.dataset = '';
   this.showFps = true;
   this.roundPoints = true;
   this.showShortkeyHelp = true;
@@ -32,7 +27,6 @@ var CloudViewer = function() {
 
   this.particleSystem = [];
   this.particlePositions = null;
-  this.cameras = [];
 };
 
 CloudViewer.prototype.setupGL = function() {
@@ -187,7 +181,6 @@ CloudViewer.prototype.setupGL = function() {
     gl.multMatrix(params.rotation);
     gl.translate(-params.center.x, -params.center.y, -params.center.z);
     cv.renderScene(cv.shaders.particle);
-    cv.renderCameras();
 
     // use push matrix to allow different trackball translation from world
     if (cv.trackball) {
@@ -217,7 +210,6 @@ CloudViewer.prototype.setupShaders = function() {
   // Define all shaders
   this.shaders = {
     pointId: new GL.Shader(glsl.pointId.vertex, glsl.pointId.fragment),
-    camera: new GL.Shader(glsl.camera.vertex, glsl.camera.fragment),
     particle: new GL.Shader(glsl.particle.vertex, glsl.particle.fragment)
   };
 };
@@ -356,16 +348,6 @@ CloudViewer.prototype.renderScene = function(shader) {
   }
 };
 
-CloudViewer.prototype.renderCameras = function() {
-  if (!this.cameras) {
-    return;
-  }
-
-  for (var i = 0; i < this.cameras.length; i++) {
-    this.shaders.camera.draw(this.cameras[i], this.gl.LINES); 
-  }
-};
-
   // Code from MeshLab source at 
   // https://github.com/kylemcdonald/ofxVCGLib/blob/master/vcglib/wrap/gui/trackutils.h
 CloudViewer.prototype.hitSphere = function(x, y) {
@@ -451,74 +433,5 @@ CloudViewer.prototype.createBuffer = function(array, spacing) {
   gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
   gl.bufferData (gl.ARRAY_BUFFER, array, gl.STATIC_DRAW); 
   return buffer;
-};
-
-CloudViewer.prototype.fetchCameras = function(start, allDoneCallback, callbackArgs) {
-  var cv = this;
-  var params = this.params;
-  var num = 1000;
-  start = start || 0;
-  if (params.camCount == 0) {
-    if (allDoneCallback) {
-      allDoneCallback.apply(this, callbackArgs);
-    }
-    return;
-  }
-  $.getJSON('api/getCamera?dataset='+params.dataset+'&num='+num+'&start='+start, 
-    function(data) {
-      cv.cameras.push(GL.Mesh.bundlerCameras(data['cameras']));
-      if (start + num < params.camCount) {
-        cv.fetchCameras(start+num, allDoneCallback, callbackArgs);
-      } else {
-        if (allDoneCallback) {
-          allDoneCallback.apply(this, callbackArgs);
-        }
-      }
-    });
-};
-
-CloudViewer.prototype.fetchParticles = function(chunkId, allDoneCallback, callbackArgs) {
-  var cv = this;
-  var params = this.params;
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'api/getPtChunk?dataset='+params.dataset+'&id='+chunkId, true);
-  xhr.responseType = 'arraybuffer';
-  xhr.overrideMimeType('text/plain; charset=x-user-defined');
-  xhr.onload = function () {
-    if (this.response) {
-      var chunkSize = params.chunkSize;
-      var floatArray = new Float32Array(this.response);
-      var posArray = floatArray.subarray(0, 3*chunkSize);
-      var colorArray = floatArray.subarray(3*chunkSize, 6*chunkSize);
-      var idxArray = floatArray.subarray(6*chunkSize, floatArray.length);
-      var posBuffer = cv.createBuffer(posArray, 3);
-      var colorBuffer = cv.createBuffer(colorArray, 3);
-      var idxBuffer = cv.createBuffer(idxArray, 1);
-      var ps = new GL.Mesh({triangles:false, colors:true});
-      ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
-      ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
-      ps.addVertexBuffer('idxs', 'idx');
-      ps.vertexBuffers['idx'].buffer = idxBuffer;
-      cv.particleSystem.push(ps);
-      for (var i = 0, j = 0; j < chunkSize; i+=3, j++) {
-        var x = posArray[i];
-        var y = posArray[i+1];
-        var z = posArray[i+2];
-        var idx = idxArray[j]
-        cv.particlePositions[parseInt(idx)] = [x, y, z];
-      }
-
-      cv.glInvalidate = true;
-      if (chunkId < params.chunkCount-1) {
-        cv.fetchParticles(chunkId+1, allDoneCallback, callbackArgs);
-      } else {
-        if (allDoneCallback) {
-          allDoneCallback.apply(this, callbackArgs);
-        }
-      }
-    }
-  };
-  xhr.send(null);
 };
 
