@@ -254,7 +254,7 @@ CloudViewer.prototype.setupUI = function() {
           var loader = new PlyLoader(e.target.result);
         };
       }(f);
-      reader.readAsText(f);
+      reader.readAsBinaryString(f);
     }
   }, false);
 };

@@ -1,9 +1,12 @@
 var PlyLoader = function(content) {
-  this.header = null;
-  this.body = null;
-  this.vertex = {
-    properties: [],
-    count: 0
+  this.headerContent = null;
+  this.bodyContent = null;
+  this.header = {
+    vertex: {
+      properties: [],
+      count: 0
+    },
+    fileformat: 'ascii',
   };
   this.parse(content);
 };
@@ -15,9 +18,8 @@ PlyLoader.prototype.parse = function(content) {
     return;
   }
 
-
-  this.header = headbodySplits[0].split("\n");
-  this.body = headbodySplits[1].split("\n");
+  this.headerContent = headbodySplits[0].split("\n");
+  this.bodyContent = headbodySplits[1];
   this.parseHeader();
   this.parseBody();
 };
@@ -27,13 +29,16 @@ PlyLoader.prototype.parseHeader = function() {
   var elementPattern = /element (\w*) (\d*)/;
   var propertyPattern = /property (char|uchar|short|ushort|int|uint|float|double) (\w*)/;
 
-  while (this.header.length > 0) {
-    var line = this.header.shift();
+  while (this.headerContent.length > 0) {
+    var line = this.headerContent.shift();
 
     if (line === 'ply') {
       console.log(line);
     } else if (line.search(formatPattern) >= 0) {
       var result = line.match(formatPattern);
+      var fileformat = result[1]
+      this.header.fileformat = fileformat;
+
       console.log('fileformat: '+result[1]);
     } else if (line.search(elementPattern) >= 0) {
       var result = line.match(elementPattern);
@@ -42,13 +47,13 @@ PlyLoader.prototype.parseHeader = function() {
       if (name !== 'vertex') {
         continue;
       }
-      this.vertex.count = parseInt(result[2]);
+      this.header.vertex.count = parseInt(result[2]);
 
-      while (this.header[0].search(propertyPattern) >= 0) {
-        var result = this.header.shift().match(propertyPattern);
+      while (this.headerContent[0].search(propertyPattern) >= 0) {
+        var result = this.headerContent.shift().match(propertyPattern);
         var type = result[1];
         var name = result[2];
-        this.vertex.properties.push({type: type, name: name});
+        this.header.vertex.properties.push({type: type, name: name});
       }
       break;
     }
@@ -58,8 +63,7 @@ PlyLoader.prototype.parseHeader = function() {
 PlyLoader.prototype.parseBody = function() {
   var cv = cloudViewer;
 
-  var blob = new Blob([$('#parse_plybody')[0].textContent]);
-  var worker = new Worker(window.URL.createObjectURL(blob));
+  var worker = new Worker('static/js/parsebody.js');
   worker.addEventListener('message', function(e) {
     var data = e.data;
 
@@ -83,8 +87,8 @@ PlyLoader.prototype.parseBody = function() {
       cv.glInvalidate = true;
 
       // cleanup
-      this.header = null;
-      this.body = null;
+      this.headerContent = null;
+      this.bodyContent = null;
     }
   }, false);
 
