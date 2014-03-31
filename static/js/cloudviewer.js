@@ -229,11 +229,15 @@ CloudViewer.prototype.setupUI = function() {
     e.stopPropagation();
     e.preventDefault();
 
+    $('.dg').css('opacity', '0.1');
+    $('#title_block').css('opacity', '0.1');
     $('#canvas').css('opacity', '0.1');
   }, false);
   document.addEventListener('dragleave', function(e) {
     e.stopPropagation();
     e.preventDefault();
+    $('.dg').css('opacity', '1');
+    $('#title_block').css('opacity', '1');
     $('#canvas').css('opacity', '1');
   }, false);
   document.addEventListener('dragover', function(e) {
@@ -245,6 +249,8 @@ CloudViewer.prototype.setupUI = function() {
     e.stopPropagation();
     e.preventDefault();
 
+    $('.dg').css('opacity', '1');
+    $('#title_block').css('opacity', '1');
     $('#canvas').css('opacity', '1');
 
     var files = e.dataTransfer.files;
@@ -253,8 +259,17 @@ CloudViewer.prototype.setupUI = function() {
     }
   }, false);
 
+  $('#help').on('click', function(e) {
+    if ($('#shortkey_help').attr('class')) {
+      $('#shortkey_help').removeClass('hidden');
+    } else {
+      $('#shortkey_help').addClass('hidden');
+    }
+  });
+
   $('#ply_url').on('keyup', function(e) {
     if (e.keyCode == 13) {
+      $('#ply_url').blur();
       var url = $(this).val();
       var xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
@@ -277,6 +292,7 @@ CloudViewer.prototype.setupUI = function() {
       xhr.send();
     }
   });
+  $('#ply_url').focus();
 };
 
 CloudViewer.prototype.readPly = function(file) {

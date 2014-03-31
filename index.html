@@ -20,25 +20,30 @@
 
 <body oncontextmenu="return false;">
 
-  <div id='dropzone'><span>Drop files here</span></div>
+  <div id='dropzone'><span>Drop .ply files here</span></div>
   <canvas id="canvas"></canvas>
   <div id="top_container">
-    <div id="import_block">
-      <input id="ply_url" type='url' placeholder=' Import from URL ...'></input>
-      <div id="loading_text"><i class="fa fa-spinner fa-spin"></i> File is big, downloading...</div>
-      <div id="drag_text">or drag and drop .ply file into the page</div>
+    <div id="title_block">
+      <i id="help" class="fa fa-info-circle nonselect"></i>
+      <div id="title" class="nonselect">
+        Point Cloud Viewer
+      </div>
+      <div id="import_block">
+        <input id="ply_url" type='url' placeholder=' Import .ply file from URL ...'></input>
+        <div id="drag_text" class="nonselect">or drag and drop .ply file into the page</div>
+      </div>
+      <div id="shortkey_help" class="hidden">
+        <ul class="nonselect">
+          <li><div style="width:100%;"><div style="width:80px;">pan:</div><div style="margin-left:10px">middle mouse-drag or ctrl+left mouse-drag</div></div></li>
+          <li><div style="width:100%;"><div style="width:80px;">zoom:</div><div style="margin-left:10px">alt+left mouse-drag or scroll</div></div></li>
+          <li><div style="width:100%;"><div style="width:80px;">center:</div><div style="margin-left:10px">left double mouse-click</div></div></li>
+          <li><div style="width:100%;"><div style="width:80px;">reset trackball:</div><div style="margin-left:10px">right mouse-click</div></div></li>
+          <li><div style="width:100%;"><div style="width:80px;">point size:</div><div style="margin-left:10px">alt+scroll</div></div></li>
+        </ul>
+      </div>
     </div>
   </div>
   <div id="bottom_container">
-    <div id="shortkey_help">
-      <ul>
-        <li><div style="width:100%;"><div style="width:80px;">pan:</div><div style="margin-left:10px">middle mouse-drag or ctrl+left mouse-drag</div></div></li>
-        <li><div style="width:100%;"><div style="width:80px;">zoom:</div><div style="margin-left:10px">alt+left mouse-drag or scroll</div></div></li>
-        <li><div style="width:100%;"><div style="width:80px;">select:</div><div style="margin-left:10px">left double mouse-click</div></div></li>
-        <li><div style="width:100%;"><div style="width:80px;">reset trackball:</div><div style="margin-left:10px">right mouse-click</div></div></li>
-        <li><div style="width:100%;"><div style="width:80px;">point size:</div><div style="margin-left:10px">alt+scroll</div></div></li>
-      </ul>
-    </div>
   </div>
   <progress id="loader_progress" value="1" max="100"></progress>
 

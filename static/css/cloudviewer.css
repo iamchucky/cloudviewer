@@ -28,16 +28,33 @@ body {
   width: 100%;
   transition: top 0.2s;
 }
-#import_block {
+#title_block {
   position: absolute;
-  margin: 20px;
+  margin: 20px 0;
   width: 25%;
-  min-width: 300px;
+  min-width: 380px;
   overflow: hidden;
 
-  padding: 10px;
-  background-color: rgba(0,0,0,0.5);
+  padding: 15px;
+  background-color: rgba(0,0,0,0.8);
   text-shadow: 0 0 2px black;
+  color: white;
+}
+#title {
+  cursor: default;
+  font-size: xx-large;
+}
+#import_block {
+}
+#help {
+  cursor: pointer;
+  position: absolute;
+  margin: 15px;
+  right: 0px;
+  top: 0px;
+}
+#help:hover {
+  color: #ddd;
 }
 #ply_url {
   width: 100%;
@@ -56,27 +73,12 @@ body {
 
 }
 #drag_text {
-  color: white;
   font-size: small;
   position: relative;
   right: 0px;
   text-align: right;
   cursor: default;
   font-style: italic;
-
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -moz-user-select: none;
-}
-#loading_text {
-  color: white;
-  position: absolute;
-  top: 25px;
-  left: 10px;
-  text-shadow: 0 0 5px black;
-
-  display: none;
 }
 #loader_progress {
   position: fixed;
@@ -98,25 +100,14 @@ progress[value]::-webkit-progress-value {
   background-color: #44abda;
 }
 
-
+.hidden {
+  display: none;
+}
 #shortkey_help {
-  position: absolute;
-  bottom: 0px;
-  left: 0px;
-  height: 105px;
-  color: white;
-  background-color: rgba(0,0,0,0.5);
-  margin: 10px;
-
   cursor: default;
 }
 
 #shortkey_help ul {
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -moz-user-select: none;
-
   list-style: none;
   padding: 10px;
   margin: 0;
@@ -133,7 +124,7 @@ progress[value]::-webkit-progress-value {
   transition: bottom 0.2s;
 }
 
-.dg {
+.dg, .nonselect {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
