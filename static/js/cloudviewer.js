@@ -249,6 +249,7 @@ CloudViewer.prototype.setupUI = function() {
     e.stopPropagation();
     e.preventDefault();
 
+    $('#ply_url').blur();
     $('.dg').css('opacity', '1');
     $('#title_block').css('opacity', '1');
     $('#canvas').css('opacity', '1');
