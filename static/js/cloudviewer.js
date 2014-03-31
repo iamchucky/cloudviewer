@@ -218,9 +218,10 @@ CloudViewer.prototype.setupUI = function() {
   var cv = this;
   var params = this.params;
 
-  var stats = new Stats();
+  // init stats
+  /*var stats = new Stats();
   $('#top_container')[0].appendChild( stats.domElement );
-  this.stats = stats;
+  this.stats = stats;*/
 
   this.setupDatGui();
 
@@ -248,15 +249,53 @@ CloudViewer.prototype.setupUI = function() {
 
     var files = e.dataTransfer.files;
     for (var i = 0, f; f = files[i]; i++) {
-      var reader = new FileReader();
-      reader.onload = function(theFile) {
-        return function(e) {
-          var loader = new PlyLoader(e.target.result);
-        };
-      }(f);
-      reader.readAsBinaryString(f);
+      cv.readPly(f);
     }
   }, false);
+
+  $('#ply_url').on('keyup', function(e) {
+    if (e.keyCode == 13) {
+      var url = $(this).val();
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.responseType = 'arraybuffer';
+      xhr.onload = function(e) {
+        $('#ply_url').val('');
+        var bb = new Blob([this.response]);
+        bb.name = url;
+        cv.readPly(bb);
+      };
+      xhr.onprogress = function(e) {
+        if (e.lengthComputable) {
+          $('#loader_progress').show();
+          var percentLoaded = Math.round((e.loaded / e.total) * 20);
+          $('#loader_progress').attr('value', percentLoaded);
+        } else {
+          $('#ply_url').val('File is big, downloading...');
+        }
+      };
+      xhr.send();
+    }
+  });
+};
+
+CloudViewer.prototype.readPly = function(file) {
+  var reader = new FileReader();
+  reader.onload = function(theFile) {
+    return function(e) {
+      var name = theFile.name;
+      console.log(name + ' loaded');
+      var loader = new PlyLoader(e.target.result);
+    };
+  }(file);
+  reader.onprogress = function(e) {
+    if (e.lengthComputable) {
+      $('#loader_progress').show();
+      var percentLoaded = Math.round((e.loaded / e.total) * 20);
+      $('#loader_progress').attr('value', percentLoaded);
+    }
+  };
+  reader.readAsBinaryString(file);
 };
 
 CloudViewer.prototype.setupDatGui = function() {

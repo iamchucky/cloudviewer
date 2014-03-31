@@ -28,6 +28,76 @@ body {
   width: 100%;
   transition: top 0.2s;
 }
+#import_block {
+  position: absolute;
+  margin: 20px;
+  width: 25%;
+  min-width: 300px;
+  overflow: hidden;
+
+  padding: 10px;
+  background-color: rgba(0,0,0,0.5);
+  text-shadow: 0 0 2px black;
+}
+#ply_url {
+  width: 100%;
+
+  position: relative;
+  background-color: transparent;
+  color: white;
+  outline: 0;
+
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom-color: white;
+  border-bottom-width: 1px;
+  padding: 5px;
+
+}
+#drag_text {
+  color: white;
+  font-size: small;
+  position: relative;
+  right: 0px;
+  text-align: right;
+  cursor: default;
+  font-style: italic;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -moz-user-select: none;
+}
+#loading_text {
+  color: white;
+  position: absolute;
+  top: 25px;
+  left: 10px;
+  text-shadow: 0 0 5px black;
+
+  display: none;
+}
+#loader_progress {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 3px;
+  z-index: 1;
+
+  -webkit-appearance: none;
+  appearance: none;
+
+  display: none;
+}
+progress[value]::-webkit-progress-bar {
+  background-color: transparent;
+}
+progress[value]::-webkit-progress-value {
+  background-color: #44abda;
+}
+
 
 #shortkey_help {
   position: absolute;
@@ -37,7 +107,6 @@ body {
   color: white;
   background-color: rgba(0,0,0,0.5);
   margin: 10px;
-  border-radius: 10px;
 
   cursor: default;
 }
@@ -57,160 +126,11 @@ body {
   float: left;
 }
 
-#loading_text {
-  position: absolute;
-  color: white;
-  top: 10px;
-  left: 50%;
-  width: 80px;
-  margin-left: -40px;
-  text-shadow: 0 0 5px black;
-
-  display: none;
-}
-
-#time_chart {
-  position: absolute;
-  top: 0px;
-  width: 100%;
-}
-
-#time_chart text {
-  fill: white;
-  text-shadow: 0 0 5px black;
-}
-
-#time_chart path {
-  stroke: rgba(255,255,255,0.1);
-}
-#time_chart rect {
-  stroke-width: 0;
-}
-
-#time_chart rect[y="3.75"] {
-  display: none;
-}
-
-#ticks_tooltip {
-  position: absolute;
-  top: -999px;
-  background-color: white;
-  font-weight: bold;
-  padding: 5px 8px;
-  color: #1a1a1a;
-  box-shadow: 0 0 5px black;
-}
-
-#stats {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-}
-
 #bottom_container {
   position: fixed;
   bottom: 0px;
   width: 100%;
   transition: bottom 0.2s;
-}
-
-#point_meta {
-  display: none;
-  bottom: 130px;
-  position: absolute;
-  color: white;
-  list-style: none;
-  padding: 10px;
-  text-shadow: 0px 1px 5px black;
-  margin: 0;
-}
-
-#point_meta li div {
-  float: left;
-}
-
-#current_time {
-  position: absolute;
-  bottom: 150px;
-  left: 50%;
-  margin-left: -50px;
-  color: white;
-  width: 100px;
-  font-size: large;
-  text-shadow: 0px 1px 5px black;
-  text-align: center;
-  cursor: default;
-}
-
-#playback_control {
-  position: absolute;
-  bottom: 210px;
-  width: 30px;
-  left: 50%;
-  margin-left: -15px;
-  padding: 0;
-  text-align: center;
-
-  color: white;
-  text-shadow: 0 0 5px black;
-  font-size: x-large;
-}
-#playback_control:hover {
-  padding-bottom: 2px;
-  text-shadow: 0 2px 8px black;
-}
-
-#time_seekbar {
-  position: absolute;
-  bottom: 190px;
-  left: 20%;
-  width: 60%;
-
-  -webkit-appearance: none !important;
-  background: white;
-  box-shadow: 0 0 5px black;
-  height: 7px;
-  outline: 0;
-}
-
-#time_seekbar::-webkit-slider-thumb {
-  -webkit-appearance: none !important;
-  background: white;
-  box-shadow: 0 0 10px black;
-  height: 20px;
-  width: 20px;
-  border-radius: 10px;
-}
-
-#time_tooltip {
-  position: absolute;
-  bottom: -999px;
-  background-color: #1a1a1a;
-  font-weight: bold;
-  padding: 5px 8px;
-  color: white;
-}
-#time_seekbar:hover ~ #time_tooltip {
-  bottom: 205px;
-}
-
-#dat_gui_container {
-  position: absolute;
-  bottom: 150px;
-  right: 10px;
-}
-#dat_gui_container > div > ul {
-  position: relative;
-  top: 20px;
-}
-#dat_gui_container > div > div {
-  top: 0px;
-}
-#dat_gui_container *, #dat_gui_container *:before, #dat_gui_container *:after {
-  box-sizing: initial;
-}
-#dat_gui_container input {
-  line-height: normal;
 }
 
 .dg {
@@ -224,98 +144,6 @@ body {
 }
 .dg input {
   line-height: normal;
-}
-
-#photo_strip {
-  width: 100%;
-  height:125px;
-  margin: 0 5px;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-#photo_strip_container {
-  position: relative;
-  bottom: 0px;
-  width: 100%;
-  height: 130px;
-  background-color: #1a1a1a;
-  box-shadow: 0 0 10px black;
-}
-
-#photo_strip::-webkit-scrollbar {
-  height: 7px;
-}
-#photo_strip::-webkit-scrollbar-thumb {
-  background-color: #555;
-}
-#photo_strip::-webkit-scrollbar-thumb:hover {
-  background-color: #888;
-}
-
-#photo_strip ul {
-  padding: 10px 0 0 0;
-  margin: 0;
-  list-style: none;
-  color: white;
-}
-
-#photo_strip li {
-  background-size: cover;
-  background-position: 50% 25%;
-  display: block;
-  width: 200px;
-  height: 100px;
-  float: left;
-  margin: 0 3px;
-}
-
-#photo_strip li > div {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  top: 0px;
-  left: 0px;
-  cursor: pointer;
-}
-
-#photo_strip li.hover > div {
-  background-color: rgba(0, 0, 0, 0.7);
-}
-
-#photo_strip li > i {
-  display: none;
-  position: relative;
-  top: -100px;
-  padding: 8px;
-  margin: 0;
-  color: #ddd;
-  text-shadow: 0 0 10px black;
-  cursor: pointer;
-}
-#photo_strip li.hover > i {
-  display: inline-block;
-}
-#photo_strip li > i:hover {
-  color: white;
-}
-
-#photo_viewer {
-  background-color: rgba(0, 0, 0, 0.8);
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0px;
-  left: 0px;
-  display: none;
-  text-align: center;
-}
-
-#photo_viewer img {
-  position: relative;
-  display: inline-block;
-  top: 10%;
-  box-shadow: 0 0 20px black;
 }
 
 #dropzone {
@@ -338,23 +166,3 @@ body {
   line-height: 0;
 }
 
-#loader_progress {
-  position: fixed;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 3px;
-  z-index: 1;
-
-  -webkit-appearance: none;
-  appearance: none;
-
-  display: none;
-}
-
-progress[value]::-webkit-progress-bar {
-  background-color: transparent;
-}
-progress[value]::-webkit-progress-value {
-  background-color: #44abda;
-}

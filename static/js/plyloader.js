@@ -68,8 +68,7 @@ PlyLoader.prototype.parseBody = function() {
     var data = e.data;
 
     if (data.status == 'update') {
-      var val = Math.floor(data.update * 100);
-      $('#loader_progress').show();
+      var val = Math.floor(data.update * 80) + 20;
       $('#loader_progress').attr('value', val);
     } else if (data.status == 'done') {
       $('#loader_progress').hide();
