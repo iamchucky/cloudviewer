@@ -288,11 +288,22 @@ CloudViewer.prototype.setupPlyLoadFromUrl = function() {
       xhr.responseType = 'arraybuffer';
       xhr.onload = function(e) {
         $('#ply_url').val('');
+
+        // only load if the response is good
+        if (xhr.status != 200) {
+          alert('Error: URL provided is invalid');
+          $('#ply_url').focus();
+          return;
+        }
+
         var bb = new Blob([this.response]);
         bb.name = url;
         cv.readPly(bb);
       };
       xhr.onprogress = function(e) {
+        if (xhr.status != 200) {
+          return;
+        }
         if (e.lengthComputable) {
           var percentLoaded = Math.round((e.loaded / e.total) * 20);
           $('#loader_progress').show();
