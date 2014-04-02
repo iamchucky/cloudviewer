@@ -1,27 +1,34 @@
-var PlyLoader = function(content) {
+var PlyLoader = function(content, onerror) {
   this.headerContent = null;
   this.bodyContent = null;
+  this.workerContent = null;
   this.header = {
     vertex: {
       properties: [],
       count: 0
     },
-    fileformat: 'ascii',
+    fileformat: '',
+    ply: false,
   };
+  this.onerror = onerror;
   this.parse(content);
 };
 
 PlyLoader.prototype.parse = function(content) {
   var headbodySplits = content.split("end_header\n");
   if (headbodySplits.length < 1) {
-    alert('invalid ply file format');
+    this.onerror();
     return;
   }
 
   this.headerContent = headbodySplits[0].split("\n");
   this.bodyContent = headbodySplits[1];
-  this.parseHeader();
-  this.parseBody();
+  var isvalid = this.parseHeader();
+  if (isvalid) {
+    this.parseBody();
+  } else {
+    this.onerror();
+  }
 };
 
 PlyLoader.prototype.parseHeader = function() {
@@ -34,6 +41,7 @@ PlyLoader.prototype.parseHeader = function() {
 
     if (line === 'ply') {
       //console.log(line);
+      this.header.ply = true;
     } else if (line.search(formatPattern) >= 0) {
       var result = line.match(formatPattern);
       var fileformat = result[1]
@@ -59,10 +67,18 @@ PlyLoader.prototype.parseHeader = function() {
       break;
     }
   }
+  var isvalid = this.header.ply && this.header.fileformat && this.header.vertex.count;
+  return isvalid;
 };
 
 PlyLoader.prototype.parseBody = function() {
   var cv = cloudViewer;
+  var loader = this;
+  this.workerContent = {
+    fileformat: this.header.fileformat,
+    vertex: this.header.vertex,
+    body: this.bodyContent
+  };
 
   var worker = new Worker('static/js/parsebodyworker.js');
   worker.addEventListener('message', function(e) {
@@ -73,6 +89,11 @@ PlyLoader.prototype.parseBody = function() {
       // reflect the progress on the UI
       var val = Math.floor(data.update * 80) + 20;
       $('#loader_progress').attr('value', val);
+
+    } else if (data.status == 'error') {
+
+      // reflect to UI if error when parsing
+      loader.onerror(data.message);
 
     } else if (data.status == 'done') {
 
@@ -99,5 +120,5 @@ PlyLoader.prototype.parseBody = function() {
     }
   }, false);
 
-  worker.postMessage(this);
+  worker.postMessage(this.workerContent);
 };

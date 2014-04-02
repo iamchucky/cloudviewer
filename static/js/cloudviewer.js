@@ -270,6 +270,7 @@ CloudViewer.prototype.setupPlyDragAndDrop = function() {
     var files = e.dataTransfer.files;
     for (var i = 0, f; f = files[i]; i++) {
       cv.readPly(f);
+      break;
     }
   }, false);
 };
@@ -300,6 +301,11 @@ CloudViewer.prototype.setupPlyLoadFromUrl = function() {
           $('#ply_url').val('File is big, downloading...');
         }
       };
+      xhr.onerror = function(e) {
+        $('#ply_url').val('');
+        alert('Error: URL provided is invalid');
+        $('#ply_url').focus();
+      };
       xhr.send();
     }
   });
@@ -312,7 +318,10 @@ CloudViewer.prototype.readPly = function(file) {
     return function(e) {
       var name = theFile.name;
       console.log(name + ' loaded');
-      var loader = new PlyLoader(e.target.result);
+      var loader = new PlyLoader(e.target.result, function(str) {
+        $('#loader_progress').hide();
+        alert(str ? str : 'Invalid file format.');
+      });
     };
   }(file);
   reader.onprogress = function(e) {
