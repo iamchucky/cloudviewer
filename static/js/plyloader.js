@@ -33,7 +33,7 @@ PlyLoader.prototype.parseHeader = function() {
     var line = this.headerContent.shift();
 
     if (line === 'ply') {
-      console.log(line);
+      //console.log(line);
     } else if (line.search(formatPattern) >= 0) {
       var result = line.match(formatPattern);
       var fileformat = result[1]
@@ -44,6 +44,7 @@ PlyLoader.prototype.parseHeader = function() {
       var result = line.match(elementPattern);
       var name = result[1];
 
+      // this app only cares about vertex
       if (name !== 'vertex') {
         continue;
       }
@@ -63,16 +64,22 @@ PlyLoader.prototype.parseHeader = function() {
 PlyLoader.prototype.parseBody = function() {
   var cv = cloudViewer;
 
-  var worker = new Worker('static/js/parsebody.js');
+  var worker = new Worker('static/js/parsebodyworker.js');
   worker.addEventListener('message', function(e) {
     var data = e.data;
 
     if (data.status == 'update') {
+
+      // reflect the progress on the UI
       var val = Math.floor(data.update * 80) + 20;
       $('#loader_progress').attr('value', val);
+
     } else if (data.status == 'done') {
+
       $('#loader_progress').hide();
       cv.particlePositions = data.pos;
+
+      // construct VBO from array buffer
       var posBuffer = cv.createBuffer(data.pos, 3);
       var colorBuffer = cv.createBuffer(data.color, 3);
       var idxBuffer = cv.createBuffer(data.idx, 1);
@@ -88,6 +95,7 @@ PlyLoader.prototype.parseBody = function() {
       // cleanup
       this.headerContent = null;
       this.bodyContent = null;
+
     }
   }, false);
 

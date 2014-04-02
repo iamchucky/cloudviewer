@@ -15,7 +15,6 @@ var Parameters = function() {
 
 var CloudViewer = function() {
   this.gl = null;
-  this.gui = null;
   this.guiZoom = null;
   this.guiPointSize = null;
   this.glInvalidate = true;
@@ -224,7 +223,21 @@ CloudViewer.prototype.setupUI = function() {
   this.stats = stats;*/
 
   this.setupDatGui();
+  this.setupPlyDragAndDrop();
+  this.setupPlyLoadFromUrl();
 
+  // toggle on help icon for showing shortkey help
+  $('#help').on('click', function(e) {
+    if ($('#shortkey_help').attr('class')) {
+      $('#shortkey_help').removeClass('hidden');
+    } else {
+      $('#shortkey_help').addClass('hidden');
+    }
+  });
+};
+
+CloudViewer.prototype.setupPlyDragAndDrop = function() {
+  var cv = this;
   document.addEventListener('dragenter', function(e) {
     e.stopPropagation();
     e.preventDefault();
@@ -259,18 +272,15 @@ CloudViewer.prototype.setupUI = function() {
       cv.readPly(f);
     }
   }, false);
+};
 
-  $('#help').on('click', function(e) {
-    if ($('#shortkey_help').attr('class')) {
-      $('#shortkey_help').removeClass('hidden');
-    } else {
-      $('#shortkey_help').addClass('hidden');
-    }
-  });
-
+CloudViewer.prototype.setupPlyLoadFromUrl = function() {
+  var cv = this;
   $('#ply_url').on('keyup', function(e) {
     if (e.keyCode == 13) {
       $('#ply_url').blur();
+
+      // start fetching file from the URL
       var url = $(this).val();
       var xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
@@ -283,8 +293,8 @@ CloudViewer.prototype.setupUI = function() {
       };
       xhr.onprogress = function(e) {
         if (e.lengthComputable) {
-          $('#loader_progress').show();
           var percentLoaded = Math.round((e.loaded / e.total) * 20);
+          $('#loader_progress').show();
           $('#loader_progress').attr('value', percentLoaded);
         } else {
           $('#ply_url').val('File is big, downloading...');
@@ -307,8 +317,8 @@ CloudViewer.prototype.readPly = function(file) {
   }(file);
   reader.onprogress = function(e) {
     if (e.lengthComputable) {
-      $('#loader_progress').show();
       var percentLoaded = Math.round((e.loaded / e.total) * 20);
+      $('#loader_progress').show();
       $('#loader_progress').attr('value', percentLoaded);
     }
   };
@@ -367,7 +377,6 @@ CloudViewer.prototype.setupDatGui = function() {
       }
     });
     */
-  this.gui = gui;
 };
 
 CloudViewer.prototype.renderIdMap = function(shader) {
