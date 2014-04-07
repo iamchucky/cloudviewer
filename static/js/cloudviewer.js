@@ -5,9 +5,6 @@ var Parameters = function() {
   this.near = 0.5;
   this.far = 2500.0;
   this.pointSize = 1.0;
-  this.resetTrackball = function() {
-    cloudViewer.trackball.invRotation = cloudViewer.params.rotation.inverse();
-  };
   this.showFps = true;
   this.roundPoints = true;
   this.showShortkeyHelp = true;
@@ -23,6 +20,9 @@ var CloudViewer = function() {
   this.trackball = null;
   this.stats = null;
   this.shaders = null;;
+  this.embeded = (window != window.top); // I'm in a iframe
+  this.autoload = utils.getUrlParams('autoload') == 'true';
+  this.onloadUrl = utils.getUrlParams('url');
 
   this.particleSystem = [];
   this.particlePositions = null;
@@ -85,9 +85,6 @@ CloudViewer.prototype.setupGL = function() {
   gl.onmouseup = function(e) {
     $('#canvas').css('cursor', 'auto');
     if (e.which == 3) {
-      // reset trackball to current rotation
-      params.resetTrackball();
-      cv.glInvalidate = true;
     }
   };
 
@@ -106,7 +103,9 @@ CloudViewer.prototype.setupGL = function() {
         }
         params.cameraZ += 150.0 * e.deltaY / gl.canvas.height;
         params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-        cv.guiZoom.updateDisplay();
+        if (cv.guiZoom) {
+          cv.guiZoom.updateDisplay();
+        }
       } else {
         // sphere mode
         $('#canvas').css('cursor', '-webkit-grabbing');
@@ -125,7 +124,9 @@ CloudViewer.prototype.setupGL = function() {
         params.pointSize /= 2.0;
       }
       params.pointSize = Math.min(512.0, Math.max(1.0, params.pointSize));
-      cv.guiPointSize.updateDisplay();
+      if (cv.guiPointSize) {
+        cv.guiPointSize.updateDisplay();
+      }
     } else {
       if (wheelDelta > 0) {
         params.cameraZ /= 2.0;
@@ -133,7 +134,9 @@ CloudViewer.prototype.setupGL = function() {
         params.cameraZ *= 2.0;
       }
       params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-      cv.guiZoom.updateDisplay();
+      if (cv.guiZoom) {
+        cv.guiZoom.updateDisplay();
+      }
     }
     cv.glInvalidate = true;
   }
@@ -147,7 +150,9 @@ CloudViewer.prototype.setupGL = function() {
     if (up || down) {
       params.cameraZ += speed * (down - up);
       params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-      cv.guiZoom.updateDisplay();
+      if (cv.guiZoom) {
+        cv.guiZoom.updateDisplay();
+      }
       cv.glInvalidate = true;
     }
 
@@ -222,18 +227,45 @@ CloudViewer.prototype.setupUI = function() {
   $('#top_container')[0].appendChild( stats.domElement );
   this.stats = stats;*/
 
-  this.setupDatGui();
-  this.setupPlyDragAndDrop();
-  this.setupPlyLoadFromUrl();
+  if (!this.embeded) {
 
-  // toggle on help icon for showing shortkey help
-  $('#help').on('click', function(e) {
-    if ($('#shortkey_help').attr('class')) {
-      $('#shortkey_help').removeClass('hidden');
-    } else {
-      $('#shortkey_help').addClass('hidden');
+    $('#title_block').show();
+    this.setupDatGui();
+    this.setupPlyDragAndDrop();
+    this.setupPlyLoadFromUrl();
+
+    // toggle on help icon for showing shortkey help
+    $('#help').on('click', function(e) {
+      if ($('#shortkey_help').attr('class')) {
+        $('#shortkey_help').removeClass('hidden');
+      } else {
+        $('#shortkey_help').addClass('hidden');
+      }
+    });
+
+    if (this.onloadUrl) {
+      this.downloadPly(this.onloadUrl);
     }
-  });
+
+  } else {
+    $('#mini_title_block').show();
+    $('#dropzone').hide();
+
+    if (!this.autoload) {
+      // show start loading UI
+      $('#top_overlay').show();
+      $('#start_download').on('click', function(e) {
+        $('#top_overlay').fadeOut();
+        if (cv.onloadUrl) {
+          cv.downloadPly(cv.onloadUrl);
+        }
+      });
+    } else if (this.onloadUrl) {
+      this.downloadPly(this.onloadUrl);
+    }
+
+  }
+
 };
 
 CloudViewer.prototype.setupPlyDragAndDrop = function() {
@@ -283,44 +315,49 @@ CloudViewer.prototype.setupPlyLoadFromUrl = function() {
 
       // start fetching file from the URL
       var url = $(this).val();
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', url, true);
-      xhr.responseType = 'arraybuffer';
-      xhr.onload = function(e) {
-        $('#ply_url').val('');
-
-        // only load if the response is good
-        if (xhr.status != 200) {
-          alert('Error: URL provided is invalid');
-          $('#ply_url').focus();
-          return;
-        }
-
-        var bb = new Blob([this.response]);
-        bb.name = url;
-        cv.readPly(bb);
-      };
-      xhr.onprogress = function(e) {
-        if (xhr.status != 200) {
-          return;
-        }
-        if (e.lengthComputable) {
-          var percentLoaded = Math.round((e.loaded / e.total) * 20);
-          $('#loader_progress').show();
-          $('#loader_progress').attr('value', percentLoaded);
-        } else {
-          $('#ply_url').val('File is big, downloading...');
-        }
-      };
-      xhr.onerror = function(e) {
-        $('#ply_url').val('');
-        alert('Error: URL provided is invalid');
-        $('#ply_url').focus();
-      };
-      xhr.send();
+      cv.downloadPly(url, '#ply_url');
     }
   });
   $('#ply_url').focus();
+};
+
+CloudViewer.prototype.downloadPly = function(url, elem) {
+  var cv = this;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.responseType = 'arraybuffer';
+  xhr.onload = function(e) {
+    $(elem).val('');
+
+    // only load if the response is good
+    if (xhr.status != 200) {
+      alert('Error: URL provided is invalid');
+      $(elem).focus();
+      return;
+    }
+
+    var bb = new Blob([this.response]);
+    bb.name = url;
+    cv.readPly(bb);
+  };
+  xhr.onprogress = function(e) {
+    if (xhr.status != 200) {
+      return;
+    }
+    if (e.lengthComputable) {
+      var percentLoaded = Math.round((e.loaded / e.total) * 20);
+      $('#loader_progress').show();
+      $('#loader_progress').attr('value', percentLoaded);
+    } else {
+      $(elem).val('File is big, downloading...');
+    }
+  };
+  xhr.onerror = function(e) {
+    $(elem).val('');
+    alert('Error: URL provided is invalid');
+    $(elem).focus();
+  };
+  xhr.send();
 };
 
 CloudViewer.prototype.readPly = function(file) {
@@ -351,32 +388,25 @@ CloudViewer.prototype.setupDatGui = function() {
   var gl = this.gl;
   var gui = new dat.GUI();
 
-  var cameraFolder = gui.addFolder('Camera');
-  cv.guiZoom = cameraFolder.add(params, 'cameraZ', 1.0, 2048.0)
+  cv.guiZoom = gui.add(params, 'cameraZ', 1.0, 2048.0)
     .name('camera z')
     .onChange(function(val) {
       cv.glInvalidate = true;
     });
-  cameraFolder.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
+  gui.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
     cv.glInvalidate = true;
   });
-  cameraFolder.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
+  gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
     gl.setNearFar(params.near, params.far);
     cv.glInvalidate = true;
   });
-  cv.guiPointSize = cameraFolder.add(params, 'pointSize', 1.0, 512.0)
+  cv.guiPointSize = gui.add(params, 'pointSize', 1.0, 512.0)
     .name('point size')
     .onChange(function(val) {
       cv.glInvalidate = true;
     });
-  cameraFolder.open();
 
-  gui.add(params, 'resetTrackball')
-    .name('reset trackball')
-    .onChange(function(val) {
-      cv.glInvalidate = true;
-    });
   /*
   gui.add(params, 'showFps')
     .name('fps')

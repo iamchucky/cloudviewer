@@ -1,5 +1,9 @@
 var utils = {
 
+  getUrlParams: function(key) {
+    return (RegExp(key + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1];
+  },
+
   unixTimeToHumanDate: function(timestamp) {
     var date = new Date(timestamp * 1000),
         dateVals = [
