@@ -129,17 +129,35 @@ progress[value]::-webkit-progress-value {
   transition: bottom 0.2s;
 }
 
-#mini_title_block {
+#mini_ui {
   display: none;
+}
+.mini_btn {
+}
+.mini_btn i {
+  vertical-align: middle;
+  padding: 1px 5px;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  line-height: 30px;
+  background-color: #111;
+  cursor: pointer;
+  float: left;
+}
+.mini_btn i:hover {
+  background-color: #44abda;
+}
 
+#mini_title_block {
   position: absolute;
   bottom: 0px;
-  right: 0px;
+  left: 0px;
   color: white;
   cursor: pointer;
   padding: 0 4px;
   font-size: x-small;
-  background-color: #222;
+  background-color: #111;
 }
 
 .dg, .nonselect {

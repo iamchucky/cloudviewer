@@ -248,8 +248,28 @@ CloudViewer.prototype.setupUI = function() {
     }
 
   } else {
-    $('#mini_title_block').show();
     $('#dropzone').hide();
+    $('#mini_ui').show();
+
+    $('#mini_btn_zoomin').on('click', function(e) {
+      params.cameraZ -= 1;
+      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
+      cv.glInvalidate = true;
+    });
+    $('#mini_btn_zoomout').on('click', function(e) {
+      params.cameraZ += 1;
+      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
+      cv.glInvalidate = true;
+    });
+
+    if (this.onloadUrl) {
+      $('#mini_btn_download').on('click', function(e) {
+        window.open(cv.onloadUrl);
+      });
+      $('#mini_btn_external').on('click', function(e) {
+        window.open('http://kmatzen.github.io/cloudviewer?url=' + cv.onloadUrl);
+      });
+    }
 
     if (!this.autoload) {
       // show start loading UI
