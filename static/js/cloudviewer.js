@@ -6,7 +6,7 @@ var Parameters = function() {
   this.far = 2500.0;
   this.pointSize = 1.0;
   this.showFps = true;
-  this.roundPoints = true;
+  this.roundPoints = false;
   this.showShortkeyHelp = true;
 };
 

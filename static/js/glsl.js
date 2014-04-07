@@ -12,7 +12,7 @@ var glsl = {
       void main() {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-        gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
+        gl_PointSize = min(8.0, size / -cameraSpace.z);\
         color = gl_Color;\
         rounded_points = round;\
       }'
@@ -44,7 +44,7 @@ var glsl = {
       void main() {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
-        gl_PointSize = min(8.0, max(2.0, size / -cameraSpace.z));\
+        gl_PointSize = min(8.0, size / -cameraSpace.z);\
         float idx0 = floor(idx/16777216.0)/255.0;\
         float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;\
         float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;\
