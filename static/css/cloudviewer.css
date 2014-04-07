@@ -210,7 +210,7 @@ progress[value]::-webkit-progress-value {
   top: 50%;
   margin: -65px auto;
   height: 130px;
-  width: 340px;
+  width: 450px;
 }
 
 .font_btn_face {
@@ -223,7 +223,7 @@ progress[value]::-webkit-progress-value {
   background-color: #333;
   text-align: center;
   padding: 20px;
-  margin: 0 20px;
+  margin: 0 10px;
   float: left;
   cursor: pointer;
 }

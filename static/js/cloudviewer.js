@@ -274,10 +274,15 @@ CloudViewer.prototype.setupUI = function() {
     if (!this.autoload) {
       // show start loading UI
       $('#top_overlay').show();
-      $('#start_download').on('click', function(e) {
+      $('#start_loading').on('click', function(e) {
         $('#top_overlay').fadeOut();
         if (cv.onloadUrl) {
           cv.downloadPly(cv.onloadUrl);
+        }
+      });
+      $('#start_download').on('click', function(e) {
+        if (cv.onloadUrl) {
+          window.open(cv.onloadUrl);
         }
       });
       $('#open_new').on('click', function(e) {
