@@ -280,6 +280,11 @@ CloudViewer.prototype.setupUI = function() {
           cv.downloadPly(cv.onloadUrl);
         }
       });
+      $('#open_new').on('click', function(e) {
+        if (cv.onloadUrl) {
+          window.open('http://kmatzen.github.io/cloudviewer?url=' + cv.onloadUrl);
+        }
+      });
     } else if (this.onloadUrl) {
       this.downloadPly(this.onloadUrl);
     }
