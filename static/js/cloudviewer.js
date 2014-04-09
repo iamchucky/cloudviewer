@@ -249,54 +249,108 @@ CloudViewer.prototype.setupUI = function() {
 
   } else {
     $('#dropzone').hide();
-    $('#mini_ui').show();
+    this.setupEmbedUI();
+  }
+};
 
-    $('#mini_btn_zoomin').on('click', function(e) {
-      params.cameraZ -= 1;
-      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-      cv.glInvalidate = true;
-    });
-    $('#mini_btn_zoomout').on('click', function(e) {
-      params.cameraZ += 1;
-      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-      cv.glInvalidate = true;
-    });
+CloudViewer.prototype.setupEmbedUI = function() {
+  var cv = this;
+  $('#mini_ui').show();
 
-    if (this.onloadUrl) {
-      $('#mini_btn_download').on('click', function(e) {
-        window.open(cv.onloadUrl);
-      });
-      $('#mini_btn_external').on('click', function(e) {
-        window.open('http://kmatzen.github.io/cloudviewer?url=' + cv.onloadUrl);
-      });
-    }
-
-    if (!this.autoload) {
-      // show start loading UI
-      $('#top_overlay').show();
-      $('#start_loading').on('click', function(e) {
-        $('#top_overlay').fadeOut();
-        if (cv.onloadUrl) {
-          cv.downloadPly(cv.onloadUrl);
-        }
-      });
-      $('#start_download').on('click', function(e) {
-        if (cv.onloadUrl) {
-          window.open(cv.onloadUrl);
-        }
-      });
-      $('#open_new').on('click', function(e) {
-        if (cv.onloadUrl) {
-          window.open('http://kmatzen.github.io/cloudviewer?url=' + cv.onloadUrl);
-        }
-      });
-    } else if (this.onloadUrl) {
-      this.downloadPly(this.onloadUrl);
-    }
-
+  var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled;
+  if (fullscreenEnabled) {
+    this.setupFullscreenHandlers();
+  } else {
+    $('#mini_btn_expand').hide();
+    $('#mini_btn_compress').hide();
   }
 
+  $('#mini_btn_zoomin').on('click', function(e) {
+    params.cameraZ -= 1;
+    params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
+    cv.glInvalidate = true;
+  });
+  $('#mini_btn_zoomout').on('click', function(e) {
+    params.cameraZ += 1;
+    params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
+    cv.glInvalidate = true;
+  });
+
+  if (this.onloadUrl) {
+    $('#mini_btn_download').on('click', function(e) {
+      window.open(cv.onloadUrl);
+    });
+  }
+
+  if (!this.autoload) {
+    // show start loading UI
+    $('#top_overlay').show();
+    $('#start_loading').on('click', function(e) {
+      $('#top_overlay').fadeOut();
+      if (cv.onloadUrl) {
+        cv.downloadPly(cv.onloadUrl);
+      }
+    });
+    $('#start_download').on('click', function(e) {
+      if (cv.onloadUrl) {
+        window.open(cv.onloadUrl);
+      }
+    });
+    $('#open_new').on('click', function(e) {
+      if (cv.onloadUrl) {
+        window.open('http://kmatzen.github.io/cloudviewer?url=' + cv.onloadUrl);
+      }
+    });
+  } else if (this.onloadUrl) {
+    this.downloadPly(this.onloadUrl);
+  }
 };
+
+CloudViewer.prototype.setupFullscreenHandlers = function() {
+  var cv = this;
+  var fullscreenHandler = function(e) {
+    var fullscreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
+    if (fullscreen) {
+      $('#mini_btn_expand').hide();
+      $('#mini_btn_compress').show();
+    } else {
+      $('#mini_btn_compress').hide();
+      $('#mini_btn_expand').show();
+    }
+  };
+  document.addEventListener('fullscreenchange', fullscreenHandler);
+  document.addEventListener('mozfullscreenchange', fullscreenHandler);
+  document.addEventListener('webkitfullscreenchange', fullscreenHandler);
+  document.addEventListener('msfullscreenchange', fullscreenHandler);
+  $('#mini_btn_expand').on('click', function(e) {
+    cv.requestFullscreen($('body')[0]);
+  });
+  $('#mini_btn_compress').on('click', function(e) {
+    cv.exitFullscreen();
+  });
+};
+
+CloudViewer.prototype.requestFullscreen = function(element) {
+  if (element.requestFullscreen) {
+    element.requestFullscreen();
+  } else if (element.mozRequestFullScreen) {
+    element.mozRequestFullScreen();
+  } else if (element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen();
+  } else if (msRequestFullscreen) {
+    element.msRequestFullscreen();
+  }
+};
+
+CloudViewer.prototype.exitFullscreen = function() {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+  }
+}
 
 CloudViewer.prototype.setupPlyDragAndDrop = function() {
   var cv = this;

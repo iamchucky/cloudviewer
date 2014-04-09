@@ -2,22 +2,150 @@
 <head>
 	<title>User Manual</title>
 	<link rel="stylesheet" href="static/css/bootstrap.min.css">
-	<link rel="stylesheet" href="static/css/font-awesome.min.css">
+	<script src="static/js/jquery-1.8.2.min.js"></script>
 </head>
 
 <body> 
 <div class="container">
-  <h1>Point Cloud Viewer <small>User Manual</small></h1>
-  <a href="http://kmatzen.github.io/cloudviewer" target="_new">http://kmatzen.github.io/cloudviewer  <i class="fa fa-external-link"></i></a>
+  <h1>
+    Point Cloud Viewer 
+    <small><a href="http://kmatzen.github.io/cloudviewer" target="_new">http://kmatzen.github.io/cloudviewer</a></small>
+  </h1>
   <br>
-  <br>
-  Dubrovnik point cloud data:
-  <br>
-  <iframe width="560" height="315" src="index.html?url=https://dl.dropbox.com/s/a9elstn7sp3wmxl/Dubrovnik6K.clear.ply" frameborder="0"></iframe>
-  <br>
-  <br>
-  Hand (with autoload):
-  <br>
-  <iframe width="560" height="315" src="index.html?autoload=true&url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply" frameborder="0"></iframe>
+  <p>Simply drag and drop your *.ply file into the page or input the URL for the *.ply file.</p>
+
+  <h2 class="page-header">Controls</h2>
+  <dl class="dl-horizontal">
+    <dt>Pan</dt><dd>middle mouse-drag or ctrl+left mouse-drag</dd>
+    <dt>Zoom</dt><dd>alt+left mouse-drag or scroll</dd>
+    <dt>Center on a point</dt><dd>left double mouse-click on a point</dd>
+    <dt>Adjust point size</dt><dd>alt+scroll</dd>
+  </dl>
+
+  <h2 class="page-header">Sharing your point cloud</h2>
+  <p>The format of the link that you can share is http://kmatzen.github.io/cloudviewer/?url=<code>&lt;PLY_FILE_URL&gt;</code></p>
+  <p>For example, if your *.ply file is located at <code>https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply</code> , then your link to share is:
+  <a href="http://kmatzen.github.io/cloudviewer/?url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply" target="_new">http://kmatzen.github.io/cloudviewer/?url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply</a></p>
+  <p>You can also input your *.ply URL below and I'll generate the link to share and the embed code for you.</p>
+  <div class="row">
+    <div class="col-sm-12">
+    <form role="form">
+      <div class="form-group">
+        <label>Ply file URL</label>
+        <input id="ply_url" class="form-control" placeholder="Enter *.ply file URL"></input>
+      </div>
+      <div class="form-group">
+        <label>URL to share</label>
+        <input id="sharing_link" class="form-control input-lg" style="cursor:default;" readonly></input>
+      </div>
+    </form>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-3">
+    <form role="form">
+      <div class="form-group">
+        <label>Canvas size</label>
+        <select id="size_options" class="form-control">
+          <option value="default">560 × 315</option>
+          <option value="medium">640 × 360</option>
+          <option value="large">853 × 480</option>
+          <option value="hd720">1280 × 720</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="checkbox">
+          <label>
+            <input id="autoload_cbx" type="checkbox"> Load on start
+          </label>
+        </div>
+        <div class="checkbox">
+          <label>
+            <input id="allowfullscreen_cbx" type="checkbox" checked> Allow fullscreen
+          </label>
+        </div>
+      </div>
+    </form>
+    </div>
+    <div class="col-sm-9">
+      <form role="form">
+        <div class="form-group">
+          <label>Embed code</label>
+          <textarea id="embed_result" class="form-control input-lg" style="cursor:default;" rows="3" readonly></textarea>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <h2 class="page-header">Examples</h2>
+  <div class="col-lg-6">
+    <h3>Dubrovnik <small>via the <a href="http://www.cs.cornell.edu/projects/p2f/" target="_new">location recognition project page</a></small></h3>
+    <iframe width="560" height="315" src="index.html?url=https://dl.dropbox.com/s/a9elstn7sp3wmxl/Dubrovnik6K.clear.ply" frameborder="0" allowfullscreen></iframe>
+  </div>
+  <div class="col-lg-6">
+    <h3>Collosseum <small>via the <a href="http://www.cs.cornell.edu/projects/p2f/" target="_new">location recognition project page</a></small></h3>
+    <iframe width="560" height="315" src="index.html?url=https://dl.dropbox.com/s/zd07egi18s5ke8k/rome16K.4.4.0.0.ply" frameborder="0" allowfullscreen></iframe>
+  </div>
+  <div class="col-lg-6">
+    <h3>Trevi Fountain <small>via the <a href="http://www.cs.cornell.edu/projects/p2f/" target="_new">location recognition project page</a></small></h3>
+    <iframe width="560" height="315" src="index.html?url=https://dl.dropbox.com/s/vvmepyv1e05tw5c/rome16K.4.0.0.0.ply" frameborder="0" allowfullscreen></iframe>
+  </div>
+  <div class="col-lg-6">
+    <h3>Skeleton Hand <small>via the <a href="http://www.cc.gatech.edu/projects/large_models/hand.html" target="_new">Georgia Institute of Technology Models Archive</a></small></h3>
+    <iframe width="560" height="315" src="index.html?autoload=true&url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply" frameborder="0"></iframe>
+  </div>
+
+
+  <footer>
+    <div class="container">
+      <br>
+      <br>
+      <br>
+      <p style="text-align:center">2014</p>
+    </div>
+  </footer>
 </div>
+<script>
+$(function() {
+  var sizing = {
+    default: [560, 315],
+    medium: [640, 360],
+    large: [853, 480],
+    hd720: [1280, 720]
+  };
+  var site = 'http://kmatzen.github.io/cloudviewer/';
+
+  var updateEmbedCode = function(e) {
+    var url = $('#ply_url').val();
+    if (url === '') {
+      $('#ply_url').parent().addClass('has-error');
+      $('#ply_url').focus();
+      return;
+    }
+    $('#ply_url').parent().removeClass('has-error');
+
+    $('#sharing_link').val(site + '?url=' + url);
+    var size = sizing[$('#size_options').val()];
+    var autoload = $('#autoload_cbx').attr('checked') == 'checked';
+    var allowfullscreen = $('#allowfullscreen_cbx').attr('checked') == 'checked' ? ' allowfullscreen' : '';
+
+    var content = '<iframe width="' + size[0] + '" height="' + size[1] + '" src="' + site + '?url=' + url + '&autoload=' + autoload + '" frameborder="0"' + allowfullscreen + '></iframe>';
+    $('#embed_result').val(content);
+  };
+
+  $('#ply_url').on('keyup', updateEmbedCode);
+  $('#size_options').on('change', updateEmbedCode);
+  $('#autoload_cbx').on('change', updateEmbedCode);
+  $('#allowfullscreen_cbx').on('change', updateEmbedCode);
+
+  $('#sharing_link').on('click', function(e) {
+    $(this).select();
+  });
+  $('#embed_result').on('click', function(e) {
+    $(this).select();
+  });
+
+});
+</script>
 </body>
