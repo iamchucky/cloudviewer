@@ -255,6 +255,7 @@ CloudViewer.prototype.setupUI = function() {
 
 CloudViewer.prototype.setupEmbedUI = function() {
   var cv = this;
+  var params = this.params;
   $('#mini_ui').show();
 
   var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled;
