@@ -52,8 +52,6 @@ body {
   cursor: default;
   font-size: xx-large;
 }
-#import_block {
-}
 #help {
   cursor: pointer;
   position: absolute;
@@ -147,6 +145,7 @@ progress[value]::-webkit-progress-value {
   background-color: #111;
   cursor: pointer;
   float: left;
+  color: white;
 }
 .mini_btn i:hover {
   background-color: #44abda;

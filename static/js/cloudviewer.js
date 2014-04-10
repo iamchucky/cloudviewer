@@ -1,5 +1,4 @@
 var Parameters = function() {
-  this.cameraZ = 10.0;
   this.near = 0.5;
   this.far = 2500.0;
   this.pointSize = 0.01;
@@ -20,7 +19,6 @@ var CloudViewer = function() {
   this.particleSystem = null;
 
   this.gl = null;
-  this.guiZoom = null;
   this.guiPointSize = null;
   this.glInvalidate = true;
   this.enable_glInvalidate = true;
@@ -180,25 +178,18 @@ CloudViewer.prototype.setupUI = function() {
       this.downloadPly(this.onloadUrl);
     }
 
+    $('#zoom_btn').css('top', '120px');
+    $('#zoom_btn').css('right', '15px');
+
   } else {
     $('#dropzone').hide();
     this.setupEmbedUI();
   }
+  this.setupZoomButton();
 };
 
-CloudViewer.prototype.setupEmbedUI = function() {
+CloudViewer.prototype.setupZoomButton = function() {
   var cv = this;
-  var params = this.params;
-  $('#mini_ui').show();
-
-  var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled;
-  if (fullscreenEnabled) {
-    this.setupFullscreenHandlers();
-  } else {
-    $('#mini_btn_expand').hide();
-    $('#mini_btn_compress').hide();
-  }
-
   var zoomInterval = null;
   $('#mini_btn_zoomin').on('mousedown', function(e) {
     cv.controls.zoomDelta(0.1);
@@ -222,7 +213,20 @@ CloudViewer.prototype.setupEmbedUI = function() {
     window.clearInterval(zoomInterval);
     cv.glInvalidate = true;
   });
+}
 
+CloudViewer.prototype.setupEmbedUI = function() {
+  var cv = this;
+  var params = this.params;
+  $('#mini_ui').show();
+
+  var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled;
+  if (fullscreenEnabled) {
+    this.setupFullscreenHandlers();
+  } else {
+    $('#mini_btn_expand').hide();
+    $('#mini_btn_compress').hide();
+  }
 
   if (this.onloadUrl) {
     $('#mini_btn_download').on('click', function(e) {
@@ -420,17 +424,14 @@ CloudViewer.prototype.setupDatGui = function() {
   var gl = this.gl;
   var gui = new dat.GUI();
 
-  cv.guiZoom = gui.add(params, 'cameraZ', 1.0, 2048.0)
-    .name('camera z')
-    .onChange(function(val) {
-      cv.glInvalidate = true;
-    });
-  gui.add(params, 'near', 0.1, 2500.0).onFinishChange(function() {
-    gl.setNearFar(params.near, params.far);
+  gui.add(params, 'near', 0.1, 2500.0).onChange(function() {
+    cv.camera.near = params.near;
+    cv.camera.updateProjectionMatrix();
     cv.glInvalidate = true;
   });
-  gui.add(params, 'far', 1.0, 2500.0).onFinishChange(function() {
-    gl.setNearFar(params.near, params.far);
+  gui.add(params, 'far', 1.0, 2500.0).onChange(function() {
+    cv.camera.far = params.far;
+    cv.camera.updateProjectionMatrix();
     cv.glInvalidate = true;
   });
   cv.guiPointSize = gui.add(params, 'pointSize', 0.0001, 0.05)
@@ -439,7 +440,6 @@ CloudViewer.prototype.setupDatGui = function() {
       cv.material.size = val;
       cv.glInvalidate = true;
     });
-
 };
 
 CloudViewer.prototype.renderIdMap = function(shader) {
