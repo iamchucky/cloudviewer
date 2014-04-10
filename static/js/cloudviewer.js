@@ -1,16 +1,24 @@
 var Parameters = function() {
   this.cameraZ = 10.0;
-  this.rotation = GL.Matrix.identity();
-  this.center = new GL.Vector(0, 0, 0);
   this.near = 0.5;
   this.far = 2500.0;
-  this.pointSize = 1.0;
-  this.showFps = true;
+  this.pointSize = 0.01;
   this.roundPoints = false;
-  this.showShortkeyHelp = true;
 };
 
+var getUrlParams = function(key) {
+  return (RegExp(key + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1];
+}
+
 var CloudViewer = function() {
+  this.canvas = $('#canvas')[0];
+  this.camera = null;
+  this.controls = null;
+  this.scene = null;
+  this.renderer = null;
+  this.mesh = null;
+  this.particleSystem = null;
+
   this.gl = null;
   this.guiZoom = null;
   this.guiPointSize = null;
@@ -21,42 +29,55 @@ var CloudViewer = function() {
   this.stats = null;
   this.shaders = null;;
   this.embeded = (window != window.top); // I'm in a iframe
-  this.autoload = utils.getUrlParams('autoload') == 'true';
-  this.onloadUrl = utils.getUrlParams('url');
+  this.autoload = getUrlParams('autoload') == 'true';
+  this.onloadUrl = getUrlParams('url');
 
-  this.particleSystem = [];
   this.particlePositions = null;
 };
 
 CloudViewer.prototype.setupGL = function() {
-  var cv = this;
   var params = this.params;
 
   // NOTE: need antialias:false so that readPixels works as expected.
   // need alpha:true to allow alpha channel working.
-  var gl = GL.create({
-    antialias: false, 
-    alpha: true, 
-    preserveDrawingBuffer: true, 
-    canvas: document.getElementById('canvas')
+  this.renderer = new THREE.WebGLRenderer({
+    antialias: false,
+    alpha: true,
+    preserveDrawingBuffer: true,
+    canvas: $('#canvas')[0]
   });
-  this.gl = gl;
-  this.trackball = new Trackball();
-  this.setupShaders();
+  this.renderer.setClearColor(0x000000, 0);
+  this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-  gl.canvas.addEventListener('dblclick', function(e) {
-    if (gl.ondblclick) gl.ondblclick(e);
+  this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, params.near, params.far);
+  this.camera.position.z = 10;
+
+  this.controls = new THREE.TrackballControls(this.camera, this.canvas);
+  this.controls.rotateSpeed = 1.0;
+  this.controls.zoomSpeed = 1.2;
+  this.controls.panSpeed = 0.8;
+  this.controls.noZoom = false;
+  this.controls.noPan = false;
+  this.controls.staticMoving = true;
+  this.controls.dynamicDampingFactor = 0.3;
+  this.controls.keys = [0, 18, 17];
+  this.controls.addEventListener('change', this.render);
+
+  this.scene = new THREE.Scene();
+  this.scene.fog = new THREE.FogExp2(0x333333, 0.002);
+
+  this.material = new THREE.ParticleSystemMaterial({ size: params.pointSize, vertexColors: true});
+
+  this.setupEventListeners();
+};
+
+CloudViewer.prototype.setupEventListeners = function() {
+  var cv = this;
+  var params = this.params;
+  this.canvas.addEventListener('dblclick', function(e) {
     e.preventDefault();
-  });
 
-  var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
-  gl.canvas.addEventListener(mousewheelevt, function(e) {
-    if (gl.onmousescroll) gl.onmousescroll(e);
-    e.preventDefault();
-  });
-
-  gl.ondblclick = function(e) {
-    cv.renderIdMap(cv.shaders.pointId);
+    /*cv.renderIdMap(cv.shaders.pointId);
     var x = e.x | e.clientX;
     var y = e.y | e.clientY;
     var pointId = cv.sampleIdMap(x, y, gl.canvas.width, gl.canvas.height);
@@ -69,53 +90,11 @@ CloudViewer.prototype.setupGL = function() {
     var pos = cv.particlePositions.subarray(pointId*3, pointId*3+3);
     params.center = new GL.Vector(pos[0], pos[1], pos[2]);
     cv.glInvalidate = true;
-    gl.ondraw();
-  };
+    gl.ondraw();*/
+  });
 
-  gl.rotateWorldXY = function(x, y, dx, dy) {
-    var rotateSpeed = 180.0;
-    var start = gl.unProject(x, y, 1);
-    var xDir = gl.unProject(x+10, y, 1).subtract(start).unit();
-    var yDir = gl.unProject(x, y+10, 1).subtract(start).unit();
-    var mx = GL.Matrix.rotate(dy*rotateSpeed, xDir.x, xDir.y, xDir.z); 
-    var my = GL.Matrix.rotate(dx*rotateSpeed, yDir.x, yDir.y, yDir.z); 
-    params.rotation = params.rotation.multiply(my).multiply(mx);
-  };
-
-  gl.onmouseup = function(e) {
-    $('#canvas').css('cursor', 'auto');
-    if (e.which == 3) {
-    }
-  };
-
-  gl.onmousemove = function(e) {
-    if (e.dragging && e.which != 3) {
-      if (e.ctrlKey || e.which == 2) {
-        // pan mode
-        $('#canvas').css('cursor', 'move');
-        cv.panWorldXY(e.x, e.y, e.deltaX, e.deltaY);
-      } else if (e.altKey) {
-        // zoom mode
-        if (e.deltaY < 0) {
-          $('#canvas').css('cursor', '-webkit-zoom-in');
-        } else {
-          $('#canvas').css('cursor', '-webkit-zoom-out');
-        }
-        params.cameraZ += 150.0 * e.deltaY / gl.canvas.height;
-        params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-        if (cv.guiZoom) {
-          cv.guiZoom.updateDisplay();
-        }
-      } else {
-        // sphere mode
-        $('#canvas').css('cursor', '-webkit-grabbing');
-        cv.rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
-      }
-      cv.glInvalidate = true;
-    }
-  };
-
-  gl.onmousescroll = function (e) {
+  var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
+  this.canvas.addEventListener(mousewheelevt, function(e) {
     var wheelDelta = e.wheelDeltaY | e.wheelDelta | e.detail*-1;
     if (e.altKey) {
       if (wheelDelta > 0) {
@@ -123,91 +102,45 @@ CloudViewer.prototype.setupGL = function() {
       } else if (wheelDelta < 0) {
         params.pointSize /= 2.0;
       }
-      params.pointSize = Math.min(512.0, Math.max(1.0, params.pointSize));
+      params.pointSize = Math.min(0.05, Math.max(0.0001, params.pointSize));
+      cv.material.size = params.pointSize;
       if (cv.guiPointSize) {
         cv.guiPointSize.updateDisplay();
       }
-    } else {
-      if (wheelDelta > 0) {
-        params.cameraZ /= 2.0;
-      } else if (wheelDelta < 0) {
-        params.cameraZ *= 2.0;
-      }
-      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-      if (cv.guiZoom) {
-        cv.guiZoom.updateDisplay();
-      }
     }
-    cv.glInvalidate = true;
-  }
+    e.preventDefault();
+  });
 
-  gl.onupdate = function(seconds) {
-    var speed = seconds * 40;
+  this.canvas.addEventListener('mouseup', function(e) {
+    $('#canvas').css('cursor', 'auto');
+  });
 
-    // Forward movement
-    var up = GL.keys.UP | 0;
-    var down = GL.keys.DOWN | 0;
-    if (up || down) {
-      params.cameraZ += speed * (down - up);
-      params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
-      if (cv.guiZoom) {
-        cv.guiZoom.updateDisplay();
+  this.canvas.addEventListener('mousedown', function(e) {
+    var self = this;
+    document.onmousemove = function(e) {
+      if (e.ctrlKey || (!e.altKey && e.which == 3)) {
+        // pan mode
+        $('#canvas').css('cursor', 'move');
+      } else if (e.altKey || e.which == 2) {
+        // zoom mode
+        $('#canvas').css('cursor', '-webkit-zoom-in');
+      } else {
+        // sphere mode
+        $('#canvas').css('cursor', '-webkit-grabbing');
       }
       cv.glInvalidate = true;
-    }
+    };
 
-    // Sideways movement
-    up = GL.keys.W | 0;
-    down = GL.keys.S | 0;
-    var left = GL.keys.A | 0;
-    var right = GL.keys.D | 0;
-    if (up || down || left || right) {
-      gl.rotateWorldXY(0, 0, (right-left)/90.0, (down-up)/90.0);
-      cv.glInvalidate = true;
-    }
-  };
+    this.onmouseup = function() {
+      document.onmousemove = null;
+    };
+  });
+};
 
-
-  gl.ondraw = function() {
-    if (params.showFps && cv.stats) {
-      cv.stats.update();
-    }
-    // be sure to set glInvalidate to true to redraw
-    if (cv.enable_glInvalidate && !cv.glInvalidate) {
-      return;
-    }
-
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.loadIdentity();
-    gl.matrixMode(gl.MODELVIEW);
-    gl.translate(0, 0, -params.cameraZ);
-    gl.multMatrix(params.rotation);
-    gl.translate(-params.center.x, -params.center.y, -params.center.z);
-    cv.renderScene(cv.shaders.particle);
-
-    // use push matrix to allow different trackball translation from world
-    if (cv.trackball) {
-      gl.pushMatrix();
-      gl.loadIdentity();
-      gl.matrixMode(gl.MODELVIEW);
-      gl.translate(0, 0, -10);
-      gl.multMatrix(params.rotation);
-      gl.multMatrix(cv.trackball.invRotation);
-      cv.trackball.shader.draw(cv.trackball.mesh, gl.LINES);
-      gl.popMatrix();
-    }
-
-    cv.glInvalidate = false;
-  };
-
-  gl.fullscreen({providedCanvas: true, near: params.near, far: params.far, fov: 45});
-  gl.animate();
-  //gl.enable(gl.CULL_FACE);
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.enable(gl.DEPTH_TEST);
-  cv.glInvalidate = true;
+CloudViewer.prototype.render = function() {
+  var cv = cloudViewer;
+  cv.renderer.render(cv.scene, cv.camera);
+  //cv.stats.update();
 };
 
 CloudViewer.prototype.setupShaders = function() {
@@ -266,16 +199,30 @@ CloudViewer.prototype.setupEmbedUI = function() {
     $('#mini_btn_compress').hide();
   }
 
-  $('#mini_btn_zoomin').on('click', function(e) {
-    params.cameraZ -= 1;
-    params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
+  var zoomInterval = null;
+  $('#mini_btn_zoomin').on('mousedown', function(e) {
+    cv.controls.zoomDelta(0.1);
+    zoomInterval = setInterval(function() {
+      cv.controls.zoomDelta(0.1);
+    }, 50);
     cv.glInvalidate = true;
   });
-  $('#mini_btn_zoomout').on('click', function(e) {
-    params.cameraZ += 1;
-    params.cameraZ = Math.min(2048.0, Math.max(1.0, params.cameraZ));
+  $('#mini_btn_zoomin').on('mouseup', function(e) {
+    window.clearInterval(zoomInterval);
     cv.glInvalidate = true;
   });
+  $('#mini_btn_zoomout').on('mousedown', function(e) {
+    cv.controls.zoomDelta(-0.1);
+    zoomInterval = setInterval(function() {
+      cv.controls.zoomDelta(-0.1);
+    }, 50);
+    cv.glInvalidate = true;
+  });
+  $('#mini_btn_zoomout').on('mouseup', function(e) {
+    window.clearInterval(zoomInterval);
+    cv.glInvalidate = true;
+  });
+
 
   if (this.onloadUrl) {
     $('#mini_btn_download').on('click', function(e) {
@@ -486,32 +433,13 @@ CloudViewer.prototype.setupDatGui = function() {
     gl.setNearFar(params.near, params.far);
     cv.glInvalidate = true;
   });
-  cv.guiPointSize = gui.add(params, 'pointSize', 1.0, 512.0)
+  cv.guiPointSize = gui.add(params, 'pointSize', 0.0001, 0.05)
     .name('point size')
     .onChange(function(val) {
+      cv.material.size = val;
       cv.glInvalidate = true;
     });
 
-  /*
-  gui.add(params, 'showFps')
-    .name('fps')
-    .onFinishChange(function(val) {
-      if (val) {
-        $('#stats').show();
-      } else {
-        $('#stats').hide();
-      }
-    });
-  gui.add(params, 'showShortkeyHelp')
-    .name('shortkey help')
-    .onFinishChange(function(val) {
-      if (val) {
-        $('#shortkey_help').show();
-      } else {
-        $('#shortkey_help').hide();
-      }
-    });
-    */
 };
 
 CloudViewer.prototype.renderIdMap = function(shader) {
@@ -547,91 +475,3 @@ CloudViewer.prototype.renderScene = function(shader) {
       .draw(this.particleSystem[i], this.gl.POINTS);
   }
 };
-
-  // Code from MeshLab source at 
-  // https://github.com/kylemcdonald/ofxVCGLib/blob/master/vcglib/wrap/gui/trackutils.h
-CloudViewer.prototype.hitSphere = function(x, y) {
-  var params = this.params;
-  var radius = params.cameraZ / 10 * 2.5;
-  var center = params.center;
-  var tracer = new GL.Raytracer();
-  var ray = tracer.getRayForPixel(x, y);
-  
-  var viewplane = utils.getViewPlane(params.center);
-  var viewpoint = tracer.eye;
-  var hitplane = utils.intersectionLinePlane(viewplane, ray, viewpoint);
-  
-  var resSp = GL.Raytracer.hitTestSphere(viewpoint, ray, params.center, radius);
-  var resHp = utils.hitHyper(center, radius, viewpoint, viewplane.normal, hitplane);
-
-  // four cases
-  // 1) Degenerate line tangent to both sphere and hyperboloid!
-  if (!resSp && !resHp) {
-    // most likely will never get hit
-    return null;
-  } 
-
-  // 2) line cross only the sphere
-  if (resSp && !resHp) {
-    return resSp.hit;
-  }
-
-  // 3) line cross only the hyperboloid
-  if (!resSp && resHp) {
-    return resHp;
-  }
-  
-  // 4) line cross both sphere and hyperboloid: choose according angle.
-  var vpVec = viewpoint.subtract(center).unit();
-  var resSpVec = resSp.hit.subtract(center).unit();
-  var angleDeg = Math.acos(vpVec.dot(resSpVec))*180.0/Math.PI;
-  
-  if (angleDeg < 45) {
-    return resSp.hit;
-  } else {
-    return resHp;
-  }
-};
-
-CloudViewer.prototype.rotateWorldWithSphere = function(x, y, dx, dy) {
-  var hitNew = this.hitSphere(x, y);
-  if (!hitNew)
-    return;
-  var hitOld = this.hitSphere(x-dx, y-dy);
-  if (!hitOld)
-    return;
-
-  var params = this.params;
-  var hitNewVec = hitNew.subtract(params.center).unit();
-  var hitOldVec = hitOld.subtract(params.center).unit();
-  var axis = hitNewVec.cross(hitOldVec).toArray();
-  var angle = Math.acos(hitNewVec.dot(hitOldVec))*180.0/Math.PI;
-
-  var m = GL.Matrix.rotate(-angle, axis[0], axis[1], axis[2]); 
-  params.rotation = params.rotation.multiply(m);
-};
-
-CloudViewer.prototype.panWorldXY = function(x, y, dx, dy) {
-  var tracer = new GL.Raytracer();
-  var viewplane = utils.getViewPlane(this.params.center);
-  var viewpoint = tracer.eye;
-
-  var oldRay = tracer.getRayForPixel(x-dx, y-dy);
-  var oldHitplane = utils.intersectionLinePlane(viewplane, oldRay, viewpoint);
-  var newRay = tracer.getRayForPixel(x, y);
-  var newHitplane = utils.intersectionLinePlane(viewplane, newRay, viewpoint);
-
-  var diff = oldHitplane.subtract(newHitplane);
-  this.params.center = this.params.center.add(diff);
-};
-
-CloudViewer.prototype.createBuffer = function(array, spacing) {
-  var gl = this.gl;
-  var buffer = gl.createBuffer();
-  buffer.length = array.length;
-  buffer.spacing = spacing;
-  gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
-  gl.bufferData (gl.ARRAY_BUFFER, array, gl.STATIC_DRAW); 
-  return buffer;
-};
-

@@ -10,13 +10,14 @@ var PlyLoader = function(content, onerror) {
     fileformat: '',
     ply: false,
   };
+  this.geometry = null;
   this.onerror = onerror;
   this.parse(content);
 };
 
 PlyLoader.prototype.parse = function(content) {
   var headbodySplits = content.split("end_header\n");
-  if (headbodySplits.length < 1) {
+  if (headbodySplits.length != 2) {
     this.onerror();
     return;
   }
@@ -74,6 +75,10 @@ PlyLoader.prototype.parseHeader = function() {
 PlyLoader.prototype.parseBody = function() {
   var cv = cloudViewer;
   var loader = this;
+  this.geometry = new THREE.BufferGeometry();
+  this.geometry.addAttribute('position', Float32Array, this.header.vertex.count, 3);
+  this.geometry.addAttribute('color', Float32Array, this.header.vertex.count, 3);
+  this.geometry.addAttribute('idx', Float32Array, this.header.vertex.count, 1);
   this.workerContent = {
     fileformat: this.header.fileformat,
     vertex: this.header.vertex,
@@ -100,17 +105,15 @@ PlyLoader.prototype.parseBody = function() {
       $('#loader_progress').hide();
       cv.particlePositions = data.pos;
 
-      // construct VBO from array buffer
-      var posBuffer = cv.createBuffer(data.pos, 3);
-      var colorBuffer = cv.createBuffer(data.color, 3);
-      var idxBuffer = cv.createBuffer(data.idx, 1);
-      var ps = new GL.Mesh({triangles:false, colors:true});
-      ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
-      ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
-      ps.addVertexBuffer('idxs', 'idx');
-      ps.vertexBuffers['idx'].buffer = idxBuffer;
-      cv.particleSystem = [];
-      cv.particleSystem.push(ps);
+      loader.geometry.attributes.position.array = data.pos;
+      loader.geometry.attributes.color.array = data.color;
+      loader.geometry.attributes.idx.array = data.idx;
+
+      if (cv.particleSystem) {
+        cv.scene.remove(cv.particleSystem);
+      }
+      cv.particleSystem = new THREE.ParticleSystem(loader.geometry, cv.material);
+      cv.scene.add(cv.particleSystem);
       cv.glInvalidate = true;
 
       // cleanup

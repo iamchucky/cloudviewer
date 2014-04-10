@@ -6,7 +6,13 @@ var cloudViewer = null;
 
 $(function() {
   $(window).resize(function() {
-    cloudViewer.glInvalidate = true;
+    //cloudViewer.glInvalidate = true;
+    cloudViewer.camera.aspect = window.innerWidth / window.innerHeight;
+    cloudViewer.camera.updateProjectionMatrix();
+
+    cloudViewer.renderer.setSize( window.innerWidth, window.innerHeight );
+    cloudViewer.controls.handleResize();
+    cloudViewer.render();
   });
 
   cloudViewer = new CloudViewer();
@@ -14,4 +20,13 @@ $(function() {
   // proceed with WebGL
   cloudViewer.setupGL();
   cloudViewer.setupUI();
+
+  animate();
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    cloudViewer.controls.update();
+    cloudViewer.render();
+  }
 });
