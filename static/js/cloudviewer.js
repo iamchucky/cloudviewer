@@ -15,7 +15,6 @@ var CloudViewer = function() {
   this.controls = null;
   this.scene = null;
   this.renderer = null;
-  this.mesh = null;
   this.particleSystem = null;
 
   this.gl = null;
@@ -75,20 +74,19 @@ CloudViewer.prototype.setupEventListeners = function() {
   this.canvas.addEventListener('dblclick', function(e) {
     e.preventDefault();
 
-    /*cv.renderIdMap(cv.shaders.pointId);
     var x = e.x | e.clientX;
     var y = e.y | e.clientY;
-    var pointId = cv.sampleIdMap(x, y, gl.canvas.width, gl.canvas.height);
+    cv.renderIdMap();
+    var pointId = cv.sampleIdMap(x, y, this.width, this.height);
+    cv.glInvalidate = true;
+    //gl.ondraw();
+    cv.material.showidx = 0;
     if (pointId == 0) {
-      cv.glInvalidate = true;
-      gl.ondraw();
       return;
     }
 
     var pos = cv.particlePositions.subarray(pointId*3, pointId*3+3);
-    params.center = new GL.Vector(pos[0], pos[1], pos[2]);
-    cv.glInvalidate = true;
-    gl.ondraw();*/
+    cv.controls.target = new THREE.Vector3(pos[0], pos[1], pos[2]);
   });
 
   var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
@@ -442,16 +440,17 @@ CloudViewer.prototype.setupDatGui = function() {
     });
 };
 
-CloudViewer.prototype.renderIdMap = function(shader) {
-  var gl = this.gl;
+CloudViewer.prototype.renderIdMap = function() {
+  var gl = this.renderer.getContext();
   gl.clearColor(0, 0, 0, 0);
   gl.colorMask(true, true, true, true);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  this.renderScene(shader);
+  this.material.showidx = 1.0;
+  this.renderer.render(this.scene, this.camera);
 };
 
 CloudViewer.prototype.sampleIdMap = function(x, y, width, height) {
-  var gl = this.gl;
+  var gl = this.renderer.getContext();
   var pixels = new Uint8Array(4);
   gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];

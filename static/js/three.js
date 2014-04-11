@@ -14681,6 +14681,8 @@ THREE.ParticleSystemMaterial = function ( parameters ) {
 	this.vertexColors = false;
 
 	this.fog = true;
+	this.attributes = {idx:{type:'f', value:[]}};
+	this.showidx = 0;
 
 	this.setValues( parameters );
 
@@ -18991,6 +18993,7 @@ THREE.UniformsLib = {
 		"opacity" : { type: "f", value: 1.0 },
 		"size" : { type: "f", value: 1.0 },
 		"scale" : { type: "f", value: 1.0 },
+		"showidx" : { type: "f", value: 0 },
 		"map" : { type: "t", value: null },
 
 		"fogDensity" : { type: "f", value: 0.00025 },
@@ -19349,8 +19352,12 @@ THREE.ShaderLib = {
 
 		vertexShader: [
 
+			"attribute float idx;",
 			"uniform float size;",
 			"uniform float scale;",
+			
+			"uniform float showidx;",
+			"varying vec4 idxColor;",
 
 			THREE.ShaderChunk[ "color_pars_vertex" ],
 			THREE.ShaderChunk[ "shadowmap_pars_vertex" ],
@@ -19368,6 +19375,14 @@ THREE.ShaderLib = {
 				"#endif",
 
 				"gl_Position = projectionMatrix * mvPosition;",
+				
+				"if (showidx == 1.0) {",
+					"float idx0 = floor(idx/16777216.0)/255.0;",
+					"float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;",
+					"float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;",
+					"float idx3 = mod(idx, 256.0)/255.0;",
+					"idxColor = vec4(idx0, idx1, idx2, idx3);",
+				"}",
 
 				THREE.ShaderChunk[ "worldpos_vertex" ],
 				THREE.ShaderChunk[ "shadowmap_vertex" ],
@@ -19380,6 +19395,8 @@ THREE.ShaderLib = {
 
 			"uniform vec3 psColor;",
 			"uniform float opacity;",
+			"uniform float showidx;",
+			"varying vec4 idxColor;",
 
 			THREE.ShaderChunk[ "color_pars_fragment" ],
 			THREE.ShaderChunk[ "map_particle_pars_fragment" ],
@@ -19395,6 +19412,10 @@ THREE.ShaderLib = {
 				THREE.ShaderChunk[ "color_fragment" ],
 				THREE.ShaderChunk[ "shadowmap_fragment" ],
 				THREE.ShaderChunk[ "fog_fragment" ],
+				
+				"if (showidx == 1.0) {",
+					"gl_FragColor = idxColor;",
+				"}",
 
 			"}"
 
@@ -24792,6 +24813,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 		uniforms.psColor.value = material.color;
 		uniforms.opacity.value = material.opacity;
 		uniforms.size.value = material.size;
+		uniforms.showidx.value = material.showidx;
 		uniforms.scale.value = _canvas.height / 2.0; // TODO: Cache this.
 
 		uniforms.map.value = material.map;
