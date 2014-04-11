@@ -2,6 +2,7 @@ var Parameters = function() {
   this.near = 0.5;
   this.far = 2500.0;
   this.pointSize = 0.01;
+  this.fogDensity = 0.002;
   this.roundPoints = false;
 };
 
@@ -61,7 +62,7 @@ CloudViewer.prototype.setupGL = function() {
   this.controls.addEventListener('change', this.render);
 
   this.scene = new THREE.Scene();
-  this.scene.fog = new THREE.FogExp2(0x333333, 0.002);
+  this.scene.fog = new THREE.FogExp2(0x333333, params.fogDensity);
 
   this.material = new THREE.ParticleSystemMaterial({ size: params.pointSize, vertexColors: true});
 
@@ -177,7 +178,7 @@ CloudViewer.prototype.setupUI = function() {
       this.downloadPly(this.onloadUrl);
     }
 
-    $('#zoom_btn').css('top', '120px');
+    $('#zoom_btn').css('top', '150px');
     $('#zoom_btn').css('right', '15px');
 
   } else {
@@ -439,6 +440,12 @@ CloudViewer.prototype.setupDatGui = function() {
     .name('point size')
     .onChange(function(val) {
       cv.material.size = val;
+      requestAnimationFrame(animate);
+    });
+  gui.add(params, 'fogDensity', 0.00025, 0.006)
+    .name('fog density')
+    .onChange(function(val) {
+      cv.scene.fog.density = val;
       requestAnimationFrame(animate);
     });
 };
