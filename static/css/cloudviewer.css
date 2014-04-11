@@ -6,7 +6,7 @@ body {
 
 #canvas {
   background: #333; /* Old browsers */
-  position: absolute;
+  position: fixed;
   top: 0px;
   left: 0px;
 }

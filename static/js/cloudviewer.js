@@ -228,7 +228,7 @@ CloudViewer.prototype.setupEmbedUI = function() {
   var params = this.params;
   $('#mini_ui').show();
 
-  var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled;
+  var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
   if (fullscreenEnabled) {
     this.setupFullscreenHandlers();
   } else {
@@ -269,7 +269,7 @@ CloudViewer.prototype.setupEmbedUI = function() {
 CloudViewer.prototype.setupFullscreenHandlers = function() {
   var cv = this;
   var fullscreenHandler = function(e) {
-    var fullscreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
+    var fullscreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
     if (fullscreen) {
       $('#mini_btn_expand').hide();
       $('#mini_btn_compress').show();
@@ -281,7 +281,7 @@ CloudViewer.prototype.setupFullscreenHandlers = function() {
   document.addEventListener('fullscreenchange', fullscreenHandler);
   document.addEventListener('mozfullscreenchange', fullscreenHandler);
   document.addEventListener('webkitfullscreenchange', fullscreenHandler);
-  document.addEventListener('msfullscreenchange', fullscreenHandler);
+  document.addEventListener('MSFullscreenChange', fullscreenHandler);
   $('#mini_btn_expand').on('click', function(e) {
     cv.requestFullscreen($('body')[0]);
   });
@@ -297,7 +297,7 @@ CloudViewer.prototype.requestFullscreen = function(element) {
     element.mozRequestFullScreen();
   } else if (element.webkitRequestFullscreen) {
     element.webkitRequestFullscreen();
-  } else if (msRequestFullscreen) {
+  } else if (element.msRequestFullscreen) {
     element.msRequestFullscreen();
   }
 };
@@ -309,6 +309,8 @@ CloudViewer.prototype.exitFullscreen = function() {
     document.mozCancelFullScreen();
   } else if (document.webkitExitFullscreen) {
     document.webkitExitFullscreen();
+  } else if (document.msExitFullscreen) {
+    document.msExitFullscreen();
   }
 }
 

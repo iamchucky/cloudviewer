@@ -84,7 +84,11 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		} else {
 
-			this.screen = this.domElement.getBoundingClientRect();
+			//this.screen = this.domElement.getBoundingClientRect();
+			// IE return incorrect getBoundingClientRect value, use clientWidth instead
+			
+			this.screen.width = this.domElement.clientWidth;
+			this.screen.height = this.domElement.clientHeight;
 			// adjustments come from similar code in the jquery offset() function
 			var d = this.domElement.ownerDocument.documentElement
 			this.screen.left += window.pageXOffset - d.clientLeft
