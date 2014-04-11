@@ -467,20 +467,3 @@ CloudViewer.prototype.sampleIdMap = function(x, y, width, height) {
   return pointId;
 };
 
-CloudViewer.prototype.renderScene = function(shader) {
-  if (!this.particleSystem) {
-    return;
-  }
-
-  var params = this.params;
-  var uniforms = { 
-    round: params.roundPoints ? 1.0 : 0.0,
-    size: params.pointSize,
-    near: params.near, 
-    far: params.far 
-  };
-  for (var i = 0; i < this.particleSystem.length; i++) {
-    shader.uniforms(uniforms)
-      .draw(this.particleSystem[i], this.gl.POINTS);
-  }
-};
