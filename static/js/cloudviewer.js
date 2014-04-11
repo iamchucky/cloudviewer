@@ -316,37 +316,35 @@ CloudViewer.prototype.exitFullscreen = function() {
 
 CloudViewer.prototype.setupPlyDragAndDrop = function() {
   var cv = this;
+  var setForegroundOpacity = function (val) {
+    $('.dg').css('opacity', val);
+    $('#title_block').css('opacity', val);
+    $('#canvas').css('opacity', val);
+    $('#zoom_btn').css('opacity', val);
+  };
   document.addEventListener('dragenter', function(e) {
     e.stopPropagation();
     e.preventDefault();
-
-    $('.dg').css('opacity', '0.1');
-    $('#title_block').css('opacity', '0.1');
-    $('#canvas').css('opacity', '0.1');
-    $('#zoom_btn').css('opacity', '0.1');
+    setForegroundOpacity('0.1');
   }, false);
   document.addEventListener('dragleave', function(e) {
     e.stopPropagation();
     e.preventDefault();
-    $('.dg').css('opacity', '1');
-    $('#title_block').css('opacity', '1');
-    $('#canvas').css('opacity', '1');
-    $('#zoom_btn').css('opacity', '1');
+    setForegroundOpacity('1');
   }, false);
   document.addEventListener('dragover', function(e) {
     e.stopPropagation();
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
+
+    setForegroundOpacity('0.1');
   }, false);
   document.addEventListener('drop', function(e) {
     e.stopPropagation();
     e.preventDefault();
 
     $('#ply_url').blur();
-    $('.dg').css('opacity', '1');
-    $('#title_block').css('opacity', '1');
-    $('#canvas').css('opacity', '1');
-    $('#zoom_btn').css('opacity', '1');
+    setForegroundOpacity('1');
 
     var files = e.dataTransfer.files;
     for (var i = 0, f; f = files[i]; i++) {
