@@ -2,7 +2,6 @@
 <head>
 	<title>CloudViewer</title>
 	<link rel="stylesheet" href="static/css/bootstrap.min.css">
-	<link rel="stylesheet" href="static/css/font-awesome.min.css">
 	<link rel="stylesheet" href="static/css/cloudviewer.css">
 
 	<script src="static/js/jquery-1.11.0.min.js"></script>
@@ -23,7 +22,7 @@
   <canvas id="canvas"></canvas>
   <div id="top_container">
     <div id="title_block">
-      <i id="help" class="fa fa-info-circle nonselect"></i>
+      <i id="help" class="glyphicon glyphicon-question-sign nonselect"></i>
       <div id="title" class="nonselect">
         Point Cloud Viewer
       </div>
@@ -41,19 +40,19 @@
       </div>
     </div>
     <div id="zoom_btn" class="mini_btn nonselect" style="position:fixed; top:0px; right:0px; width:30px;">
-      <i id="mini_btn_zoomin" class="fa fa-plus nonselect"></i>
-      <i id="mini_btn_zoomout" class="fa fa-minus nonselect"></i>
+      <i id="mini_btn_zoomin" class="glyphicon glyphicon-plus nonselect"></i>
+      <i id="mini_btn_zoomout" class="glyphicon glyphicon-minus nonselect"></i>
     </div>
   </div>
   <div id="bottom_container">
   </div>
   <div id="mini_ui" style="color:white">
     <div class="mini_btn nonselect" style="position:fixed; top:0px; left:0px;">
-      <i id="mini_btn_download" class="fa fa-download nonselect"></i>
+      <i id="mini_btn_download" class="glyphicon glyphicon-cloud-download nonselect"></i>
     </div>
     <div class="mini_btn nonselect" style="position:fixed; bottom:0px; right:0px;">
-      <i id="mini_btn_expand" class="fa fa-expand nonselect"></i>
-      <i id="mini_btn_compress" class="fa fa-compress nonselect" style="display:none;"></i>
+      <i id="mini_btn_expand" class="glyphicon glyphicon-resize-full nonselect"></i>
+      <i id="mini_btn_compress" class="glyphicon glyphicon-resize-small nonselect" style="display:none;"></i>
     </div>
     <div id="mini_title_block" class="nonselect">
       <i><a href="http://kmatzen.github.io/cloudviewer" target="_new" style="color:white; text-decoration:none;">powered by Point Cloud Viewer</a></i>
@@ -63,15 +62,15 @@
   <div id="top_overlay" class="nonselect">
     <div id="btn_container">
       <div id="start_loading" class="nonselect font_btn">
-        <i class="fa fa-play fa-4x font_btn_face"></i>
+        <i class="glyphicon glyphicon-play font_btn_face"></i>
         <div class="nonselect" style="font-size:12px">Start loading</div>
       </div>
       <div id="start_download" class="nonselect font_btn">
-        <i class="fa fa-download fa-4x font_btn_face"></i>
+        <i class="glyphicon glyphicon-cloud-download font_btn_face"></i>
         <div class="nonselect" style="font-size:12px">Download .ply</div>
       </div>
       <div id="open_new" class="nonselect font_btn">
-        <i class="fa fa-external-link fa-4x font_btn_face"></i>
+        <i class="glyphicon glyphicon-new-window font_btn_face"></i>
         <div class="nonselect" style="font-size:12px">Open in new tab</div>
       </div>
     </div>

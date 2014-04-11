@@ -137,7 +137,6 @@ progress[value]::-webkit-progress-value {
 }
 .mini_btn i {
   vertical-align: middle;
-  padding: 1px 5px;
   width: 30px;
   height: 30px;
   text-align: center;
@@ -236,6 +235,7 @@ progress[value]::-webkit-progress-value {
 
 .font_btn_face {
   line-height: 75px;
+  font-size: 40px;
 }
 
 .font_btn {
