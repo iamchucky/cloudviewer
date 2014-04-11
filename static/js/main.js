@@ -6,7 +6,6 @@ var cloudViewer = null;
 
 $(function() {
   $(window).resize(function() {
-    //cloudViewer.glInvalidate = true;
     cloudViewer.camera.aspect = window.innerWidth / window.innerHeight;
     cloudViewer.camera.updateProjectionMatrix();
 
@@ -22,11 +21,9 @@ $(function() {
   cloudViewer.setupUI();
 
   animate();
-
-  function animate() {
-    requestAnimationFrame(animate);
-
-    cloudViewer.controls.update();
-    cloudViewer.render();
-  }
 });
+
+function animate() {
+  cloudViewer.controls.update();
+  cloudViewer.render();
+}

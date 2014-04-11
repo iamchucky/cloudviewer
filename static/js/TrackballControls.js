@@ -409,22 +409,16 @@ THREE.TrackballControls = function ( object, domElement ) {
 		
 		}
 
-		if ( _state === STATE.ROTATE && !_this.noRotate ) {
+		
+		_this.getMouseProjectionOnBall( event.pageX, event.pageY, _rotateStart );
+		_rotateEnd.copy(_rotateStart)
 
-			_this.getMouseProjectionOnBall( event.pageX, event.pageY, _rotateStart );
-			_rotateEnd.copy(_rotateStart)
+		_this.getMouseOnScreen( event.pageX, event.pageY, _zoomStart );
+		_zoomEnd.copy(_zoomStart);
 
-		} else if ( _state === STATE.ZOOM && !_this.noZoom ) {
+		_this.getMouseOnScreen( event.pageX, event.pageY, _panStart );
+		_panEnd.copy(_panStart)
 
-			_this.getMouseOnScreen( event.pageX, event.pageY, _zoomStart );
-			_zoomEnd.copy(_zoomStart);
-
-		} else if ( _state === STATE.PAN && !_this.noPan ) {
-
-			_this.getMouseOnScreen( event.pageX, event.pageY, _panStart );
-			_panEnd.copy(_panStart)
-
-		}
 
 		document.addEventListener( 'mousemove', mousemove, false );
 		document.addEventListener( 'mouseup', mouseup, false );
@@ -439,6 +433,12 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		event.preventDefault();
 		event.stopPropagation();
+		
+		if ( event.ctrlKey ) {
+			_state = STATE.PAN;
+		} else if ( event.altKey ) {
+			_state = STATE.ZOOM;
+		}
 
 		if ( _state === STATE.ROTATE && !_this.noRotate ) {
 
@@ -474,7 +474,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 	function mousewheel( event ) {
 
 		if ( _this.enabled === false ) return;
-		if ( _keyIsDown ) return;
+		if ( _keyIsDown || event.altKey || event.ctrlKey ) return;
 
 		event.preventDefault();
 		event.stopPropagation();

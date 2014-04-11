@@ -57,7 +57,7 @@ CloudViewer.prototype.setupGL = function() {
   this.controls.noPan = false;
   this.controls.staticMoving = true;
   this.controls.dynamicDampingFactor = 0.3;
-  this.controls.keys = [0, 18, 17];
+  this.controls.keys = [0, 0, 0];
   this.controls.addEventListener('change', this.render);
 
   this.scene = new THREE.Scene();
@@ -78,8 +78,8 @@ CloudViewer.prototype.setupEventListeners = function() {
     var y = e.y | e.clientY;
     cv.renderIdMap();
     var pointId = cv.sampleIdMap(x, y, this.width, this.height);
-    cv.glInvalidate = true;
-    //gl.ondraw();
+    requestAnimationFrame(animate);
+
     cv.material.showidx = 0;
     if (pointId == 0) {
       return;
@@ -104,6 +104,7 @@ CloudViewer.prototype.setupEventListeners = function() {
         cv.guiPointSize.updateDisplay();
       }
     }
+    requestAnimationFrame(animate);
     e.preventDefault();
   });
 
@@ -124,7 +125,7 @@ CloudViewer.prototype.setupEventListeners = function() {
         // sphere mode
         $('#canvas').css('cursor', '-webkit-grabbing');
       }
-      cv.glInvalidate = true;
+      requestAnimationFrame(animate);
     };
 
     this.onmouseup = function() {
@@ -191,25 +192,27 @@ CloudViewer.prototype.setupZoomButton = function() {
   var zoomInterval = null;
   $('#mini_btn_zoomin').on('mousedown', function(e) {
     cv.controls.zoomDelta(0.1);
+    requestAnimationFrame(animate);
     zoomInterval = setInterval(function() {
       cv.controls.zoomDelta(0.1);
+      requestAnimationFrame(animate);
     }, 50);
-    cv.glInvalidate = true;
   });
   $('#mini_btn_zoomin').on('mouseup', function(e) {
     window.clearInterval(zoomInterval);
-    cv.glInvalidate = true;
+    requestAnimationFrame(animate);
   });
   $('#mini_btn_zoomout').on('mousedown', function(e) {
     cv.controls.zoomDelta(-0.1);
+    requestAnimationFrame(animate);
     zoomInterval = setInterval(function() {
       cv.controls.zoomDelta(-0.1);
+      requestAnimationFrame(animate);
     }, 50);
-    cv.glInvalidate = true;
   });
   $('#mini_btn_zoomout').on('mouseup', function(e) {
     window.clearInterval(zoomInterval);
-    cv.glInvalidate = true;
+    requestAnimationFrame(animate);
   });
 }
 
@@ -425,18 +428,18 @@ CloudViewer.prototype.setupDatGui = function() {
   gui.add(params, 'near', 0.1, 2500.0).onChange(function() {
     cv.camera.near = params.near;
     cv.camera.updateProjectionMatrix();
-    cv.glInvalidate = true;
+    requestAnimationFrame(animate);
   });
   gui.add(params, 'far', 1.0, 2500.0).onChange(function() {
     cv.camera.far = params.far;
     cv.camera.updateProjectionMatrix();
-    cv.glInvalidate = true;
+    requestAnimationFrame(animate);
   });
   cv.guiPointSize = gui.add(params, 'pointSize', 0.0001, 0.05)
     .name('point size')
     .onChange(function(val) {
       cv.material.size = val;
-      cv.glInvalidate = true;
+      requestAnimationFrame(animate);
     });
 };
 

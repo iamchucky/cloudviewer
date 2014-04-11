@@ -114,7 +114,7 @@ PlyLoader.prototype.parseBody = function() {
       }
       cv.particleSystem = new THREE.ParticleSystem(loader.geometry, cv.material);
       cv.scene.add(cv.particleSystem);
-      cv.glInvalidate = true;
+      requestAnimationFrame(animate);
 
       // cleanup
       this.headerContent = null;
