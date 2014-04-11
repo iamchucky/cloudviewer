@@ -187,8 +187,8 @@ CloudViewer.prototype.setupUI = function() {
     $('#zoom_btn').css('top', '150px');
     $('#zoom_btn').css('right', '15px');
 
+    $('#dropzone').show();
   } else {
-    $('#dropzone').hide();
     this.setupEmbedUI();
   }
   this.setupZoomButton();
@@ -321,6 +321,7 @@ CloudViewer.prototype.setupPlyDragAndDrop = function() {
     $('.dg').css('opacity', '0.1');
     $('#title_block').css('opacity', '0.1');
     $('#canvas').css('opacity', '0.1');
+    $('#zoom_btn').css('opacity', '0.1');
   }, false);
   document.addEventListener('dragleave', function(e) {
     e.stopPropagation();
@@ -328,6 +329,7 @@ CloudViewer.prototype.setupPlyDragAndDrop = function() {
     $('.dg').css('opacity', '1');
     $('#title_block').css('opacity', '1');
     $('#canvas').css('opacity', '1');
+    $('#zoom_btn').css('opacity', '1');
   }, false);
   document.addEventListener('dragover', function(e) {
     e.stopPropagation();
@@ -342,6 +344,7 @@ CloudViewer.prototype.setupPlyDragAndDrop = function() {
     $('.dg').css('opacity', '1');
     $('#title_block').css('opacity', '1');
     $('#canvas').css('opacity', '1');
+    $('#zoom_btn').css('opacity', '1');
 
     var files = e.dataTransfer.files;
     for (var i = 0, f; f = files[i]; i++) {
@@ -409,8 +412,14 @@ CloudViewer.prototype.readPly = function(file) {
   reader.onload = function(theFile) {
     return function(e) {
       var name = theFile.name;
+      var binary = '';
+      var bytes = new Uint8Array(e.target.result);
+      for (var i = 0; i < bytes.byteLength; ++i) {
+        binary += String.fromCharCode(bytes[i]);
+      }
       console.log(name + ' loaded');
-      var loader = new PlyLoader(e.target.result, function(str) {
+
+      var loader = new PlyLoader(binary, function(str) {
         $('#loader_progress').hide();
         alert(str ? str : 'Invalid file format.');
       });
@@ -423,7 +432,7 @@ CloudViewer.prototype.readPly = function(file) {
       $('#loader_progress').attr('value', percentLoaded);
     }
   };
-  reader.readAsBinaryString(file);
+  reader.readAsArrayBuffer(file);
 };
 
 CloudViewer.prototype.setupDatGui = function() {
@@ -473,3 +482,16 @@ CloudViewer.prototype.sampleIdMap = function(x, y, width, height) {
   return pointId;
 };
 
+CloudViewer.prototype.fitAll = function(medoid, distToCenter) {
+  var fromTargetToMedoid = new THREE.Vector3();
+  fromTargetToMedoid.subVectors(medoid, this.controls.target);
+  this.camera.position.addVectors(this.camera.position, fromTargetToMedoid);
+  this.controls.target = medoid;
+
+  var zoomDist = new THREE.Vector3();
+  zoomDist.subVectors(this.camera.position, this.controls.target);
+  zoomDist.setLength(distToCenter);
+  this.camera.position.addVectors(zoomDist, this.controls.target);
+
+  requestAnimationFrame(animate);
+};
