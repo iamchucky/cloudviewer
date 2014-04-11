@@ -87,7 +87,13 @@ CloudViewer.prototype.setupEventListeners = function() {
     }
 
     var pos = cv.particlePositions.subarray(pointId*3, pointId*3+3);
-    cv.controls.target = new THREE.Vector3(pos[0], pos[1], pos[2]);
+    var newTarget = new THREE.Vector3(pos[0], pos[1], pos[2]);
+    var v = new THREE.Vector3();
+    v.subVectors(newTarget, cv.controls.target);
+
+    cv.camera.position.addVectors(cv.camera.position, v);
+    cv.controls.target = newTarget;
+    requestAnimationFrame(animate);
   });
 
   var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
