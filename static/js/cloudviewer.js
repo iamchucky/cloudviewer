@@ -1,5 +1,5 @@
 var Parameters = function() {
-  this.near = 0.5;
+  this.near = 0.001;
   this.far = 2500.0;
   this.pointSize = 0.01;
   this.fogDensity = 0.002;
@@ -426,7 +426,7 @@ CloudViewer.prototype.setupDatGui = function() {
   var gl = this.gl;
   var gui = new dat.GUI();
 
-  gui.add(params, 'near', 0.1, 2500.0).onChange(function() {
+  gui.add(params, 'near', 0.001, 1.0).onChange(function() {
     cv.camera.near = params.near;
     cv.camera.updateProjectionMatrix();
     requestAnimationFrame(animate);
