@@ -408,14 +408,19 @@ CloudViewer.prototype.downloadPly = function(url, elem) {
 };
 
 CloudViewer.prototype.readPly = function(file) {
+  var cv = this;
   var reader = new FileReader();
   reader.onload = function(theFile) {
     return function(e) {
       var name = theFile.name;
       var binary = '';
-      var bytes = new Uint8Array(e.target.result);
-      for (var i = 0; i < bytes.byteLength; ++i) {
-        binary += String.fromCharCode(bytes[i]);
+      if (reader.readAsBinaryString) {
+        binary = e.target.result;
+      } else {
+        var bytes = new Uint8Array(e.target.result);
+        for (var i = 0; i < bytes.byteLength; ++i) {
+          binary += String.fromCharCode(bytes[i]);
+        }
       }
       console.log(name + ' loaded');
 
@@ -432,7 +437,12 @@ CloudViewer.prototype.readPly = function(file) {
       $('#loader_progress').attr('value', percentLoaded);
     }
   };
-  reader.readAsArrayBuffer(file);
+
+  if (reader.readAsBinaryString) {
+    reader.readAsBinaryString(file);
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
 };
 
 CloudViewer.prototype.setupDatGui = function() {

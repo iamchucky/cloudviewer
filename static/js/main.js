@@ -27,3 +27,4 @@ function animate() {
   cloudViewer.controls.update();
   cloudViewer.render();
 }
+
