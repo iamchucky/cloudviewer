@@ -75,8 +75,8 @@ CloudViewer.prototype.setupEventListeners = function() {
   this.canvas.addEventListener('dblclick', function(e) {
     e.preventDefault();
 
-    var x = e.x | e.clientX;
-    var y = e.y | e.clientY;
+    var x = e.clientX ? e.clientX : e.x;
+    var y = e.clientY ? e.clientY : e.y;
     cv.renderIdMap();
     var pointId = cv.sampleIdMap(x, y, this.width, this.height);
     requestAnimationFrame(animate);
