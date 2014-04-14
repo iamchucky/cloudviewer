@@ -510,6 +510,11 @@ CloudViewer.prototype.findMedoidAndDist = function(idx, pos) {
   // find 100 random samples
   var samples = [];
   var numSamples = 100;
+  // if not enough points, return
+  if (idx.length < 100) {
+    return {medoid: null, dist: 10};
+  }
+
   for (var i = 0; i < numSamples; ++i) {
     samples.push(idx[Math.floor(Math.random()*idx.length)]);
   }
