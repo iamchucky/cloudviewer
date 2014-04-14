@@ -115,8 +115,10 @@ PlyLoader.prototype.parseBody = function() {
       cv.particleSystem = new THREE.ParticleSystem(loader.geometry, cv.material);
       cv.scene.add(cv.particleSystem);
 
+      var ret = cv.findMedoidAndDist(data.idx, data.pos);
+
       // compute medoid and zoom out.
-      cv.fitAll(new THREE.Vector3(), 10);
+      cv.fitAll(ret.medoid, ret.dist);
 
       // cleanup
       this.headerContent = null;

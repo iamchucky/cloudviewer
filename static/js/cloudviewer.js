@@ -2,7 +2,7 @@ var Parameters = function() {
   this.near = 0.001;
   this.far = 2500.0;
   this.pointSize = 0.01;
-  this.fogDensity = 0.002;
+  this.fogDensity = 0.001;
   this.roundPoints = false;
 };
 
@@ -467,7 +467,7 @@ CloudViewer.prototype.setupDatGui = function() {
       cv.material.size = val;
       requestAnimationFrame(animate);
     });
-  gui.add(params, 'fogDensity', 0.00025, 0.006)
+  gui.add(params, 'fogDensity', 0.00025, 0.003)
     .name('fog density')
     .onChange(function(val) {
       cv.scene.fog.density = val;
@@ -504,4 +504,67 @@ CloudViewer.prototype.fitAll = function(medoid, distToCenter) {
   this.camera.position.addVectors(zoomDist, this.controls.target);
 
   requestAnimationFrame(animate);
+};
+
+CloudViewer.prototype.findMedoidAndDist = function(idx, pos) {
+  // find 100 random samples
+  var samples = [];
+  var numSamples = 100;
+  for (var i = 0; i < numSamples; ++i) {
+    samples.push(idx[Math.floor(Math.random()*idx.length)]);
+  }
+
+  // find the medoid out of the 100 samples
+  var minDist = Number.MAX_VALUE;
+  var medoidI = null;
+  
+  var minDistJ = null;
+  for (var i = 0; i < numSamples; ++i) {
+    var sumDist = 0;
+    var idxI = samples[i];
+    var spacingI = idxI * 3;
+    var xI = pos[spacingI];
+    var yI = pos[spacingI + 1];
+    var zI = pos[spacingI + 2];
+    var distJ = [];
+    for (var j = 0; j < numSamples; ++j) {
+      if (j == i) {
+        continue;
+      }
+
+      // calculate norm then add to sum
+      var idxJ = samples[j];
+      var spacingJ = idxJ * 3;
+      var xJ = pos[spacingJ];
+      var yJ = pos[spacingJ + 1];
+      var zJ = pos[spacingJ + 2];
+
+      var dist = Math.pow(xI-xJ, 2) + Math.pow(yI-yJ, 2) + Math.pow(zI-zJ, 2);
+      sumDist += dist;
+      distJ.push({dist:dist, idx:idxJ});
+
+      if (sumDist >= minDist) {
+        break;
+      }
+    }
+    if (sumDist < minDist) {
+      minDist = sumDist;
+      medoidI = i;
+      minDistJ = distJ;
+    }
+  }
+
+  var medoidIdx = samples[medoidI];
+  var medoid = new THREE.Vector3(pos[medoidIdx*3], pos[medoidIdx*3+1], pos[medoidIdx*3+2]);
+
+  // find the top 90%
+  function compareDist(a, b) {
+    return a.dist - b.dist;
+  }
+  var sortedDistJ = minDistJ.sort(compareDist);
+
+  var rank = Math.round(0.9 * numSamples + 0.5);
+  var distToCenter = Math.sqrt(sortedDistJ[rank].dist) / Math.sin( Math.PI / 180.0 * this.camera.fov * 0.5 );
+
+  return {medoid: medoid, dist: distToCenter};
 };
