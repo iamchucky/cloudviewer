@@ -31,6 +31,7 @@ var CloudViewer = function() {
   this.onloadUrl = getUrlParams('url');
 
   this.isMobile = (typeof window.orientation !== 'undefined');
+  this.fullscreen = false;
   console.log(this.isMobile);
 
   this.particlePositions = null;
@@ -171,39 +172,58 @@ CloudViewer.prototype.setupUI = function() {
   $('#top_container')[0].appendChild( stats.domElement );
   this.stats = stats;*/
 
-  if (!this.embeded && !this.isMobile) {
-
-    $('#title_block').show();
-    this.setupDatGui();
-    this.setupPlyDragAndDrop();
-    this.setupPlyLoadFromUrl();
-
-    // toggle on help icon for showing shortkey help
-    $('#help').on('click', function(e) {
-      if ($('#shortkey_help').attr('class')) {
-        $('#shortkey_help').removeClass('hidden');
-      } else {
-        $('#shortkey_help').addClass('hidden');
+  if (this.isMobile) {
+    var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
+    if (fullscreenEnabled) {
+      this.setupFullscreenHandlers();
+    }
+    this.setupAutoload();
+    Hammer($('#canvas')[0]).on('doubletap', function(e) {
+      if (fullscreenEnabled) {
+        if (cv.fullscreen) {
+          cv.exitFullscreen();
+        } else {
+          cv.requestFullscreen($('#canvas')[0]);
+        }
       }
     });
-
-    if (this.onloadUrl) {
-      this.downloadPly(this.onloadUrl);
-    }
-
-    $('#zoom_btn').css('top', '150px');
-    $('#zoom_btn').css('right', '15px');
-
-    $('#dropzone').show();
   } else {
-    this.setupEmbedUI();
+    if (!this.embeded) {
+
+      $('#title_block').show();
+      this.setupDatGui();
+      this.setupPlyDragAndDrop();
+      this.setupPlyLoadFromUrl();
+
+      // toggle on help icon for showing shortkey help
+      $('#help').on('click', function(e) {
+        if ($('#shortkey_help').attr('class')) {
+          $('#shortkey_help').removeClass('hidden');
+        } else {
+          $('#shortkey_help').addClass('hidden');
+        }
+      });
+
+      if (this.onloadUrl) {
+        this.downloadPly(this.onloadUrl);
+      }
+
+      $('#zoom_btn').css('top', '150px');
+      $('#zoom_btn').css('right', '15px');
+
+      $('#dropzone').show();
+    } else {
+      this.setupEmbedUI();
+      this.setupAutoload();
+    }
+    this.setupZoomButton();
   }
-  this.setupZoomButton();
 };
 
 CloudViewer.prototype.setupZoomButton = function() {
   var cv = this;
   var zoomInterval = null;
+  $('#zoom_btn').show();
   $('#mini_btn_zoomin').on('mousedown', function(e) {
     cv.controls.zoomDelta(0.1);
     requestAnimationFrame(animate);
@@ -248,7 +268,10 @@ CloudViewer.prototype.setupEmbedUI = function() {
       window.open(cv.onloadUrl);
     });
   }
+};
 
+CloudViewer.prototype.setupAutoload = function() {
+  var cv = this;
   if (!this.autoload) {
     // show start loading UI
     $('#top_overlay').show();
@@ -265,7 +288,7 @@ CloudViewer.prototype.setupEmbedUI = function() {
     });
     $('#open_new').on('click', function(e) {
       if (cv.onloadUrl) {
-        window.open('http://kmatzen.github.io/cloudviewer?url=' + cv.onloadUrl);
+        window.open('http://kmatzen.github.io/cloudviewer?autoload=true&url=' + cv.onloadUrl);
       }
     });
   } else if (this.onloadUrl) {
@@ -277,6 +300,7 @@ CloudViewer.prototype.setupFullscreenHandlers = function() {
   var cv = this;
   var fullscreenHandler = function(e) {
     var fullscreen = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    cv.fullscreen = fullscreen;
     if (fullscreen) {
       $('#mini_btn_expand').hide();
       $('#mini_btn_compress').show();
