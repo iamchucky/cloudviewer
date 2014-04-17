@@ -77,6 +77,9 @@ CloudViewer.prototype.setupEventListeners = function() {
   var cv = this;
   var params = this.params;
   this.canvas.addEventListener('dblclick', function(e) {
+    if (cv.isMobile) {
+      return;
+    }
     e.preventDefault();
 
     var x = e.clientX ? e.clientX : e.x;
@@ -173,11 +176,21 @@ CloudViewer.prototype.setupUI = function() {
   this.stats = stats;*/
 
   if (this.isMobile) {
+    if (!this.embeded && !this.onloadUrl) {
+      $('#title_block').css('margin', 'auto');
+      $('#title_block').css('position', 'initial');
+      $('#title_block').show();
+      $('#drag_text').hide();
+      $('#help').hide();
+      this.setupPlyLoadFromUrl();
+    } else {
+      this.setupAutoload();
+    }
+    $('#mini_title_block').show();
     var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
     if (fullscreenEnabled) {
       this.setupFullscreenHandlers();
     }
-    this.setupAutoload();
     Hammer($('#canvas')[0]).on('doubletap', function(e) {
       if (fullscreenEnabled) {
         if (cv.fullscreen) {
@@ -254,6 +267,7 @@ CloudViewer.prototype.setupEmbedUI = function() {
   var cv = this;
   var params = this.params;
   $('#mini_ui').show();
+  $('#mini_title_block').show();
 
   var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
   if (fullscreenEnabled) {
