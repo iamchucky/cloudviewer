@@ -139,6 +139,10 @@ CloudViewer.prototype.setupEventListeners = function() {
       document.onmousemove = null;
     };
   });
+
+  this.canvas.addEventListener('touchmove', function(e) {
+    requestAnimationFrame(animate);
+  });
 };
 
 CloudViewer.prototype.render = function() {
