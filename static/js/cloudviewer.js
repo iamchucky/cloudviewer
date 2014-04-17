@@ -30,6 +30,9 @@ var CloudViewer = function() {
   this.autoload = getUrlParams('autoload') == 'true';
   this.onloadUrl = getUrlParams('url');
 
+  this.isMobile = (typeof window.orientation !== 'undefined');
+  console.log(this.isMobile);
+
   this.particlePositions = null;
 };
 
@@ -168,7 +171,7 @@ CloudViewer.prototype.setupUI = function() {
   $('#top_container')[0].appendChild( stats.domElement );
   this.stats = stats;*/
 
-  if (!this.embeded) {
+  if (!this.embeded && !this.isMobile) {
 
     $('#title_block').show();
     this.setupDatGui();
