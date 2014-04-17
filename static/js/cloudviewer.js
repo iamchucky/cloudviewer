@@ -178,15 +178,18 @@ CloudViewer.prototype.setupUI = function() {
   if (this.isMobile) {
     if (!this.embeded && !this.onloadUrl) {
       $('#title_block').css('margin', 'auto');
+      $('#title_block').css('width', '75%');
       $('#title_block').css('position', 'initial');
+      $('#ply_url').css('font-size', 'xx-large');
+      $('#title').hide();
       $('#title_block').show();
       $('#drag_text').hide();
       $('#help').hide();
       this.setupPlyLoadFromUrl();
     } else {
       this.setupAutoload();
+      $('#mini_title_block').show();
     }
-    $('#mini_title_block').show();
     var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
     if (fullscreenEnabled) {
       this.setupFullscreenHandlers();
