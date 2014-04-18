@@ -30,9 +30,9 @@
   </dl>
 
   <h2 class="page-header">Sharing your point cloud</h2>
-  <p>The format of the link that you can share is http://kmatzen.github.io/cloudviewer/?url=<code>&lt;PLY_FILE_URL&gt;</code></p>
+  <p>The format of the link that you can share is http://kmatzen.github.io/cloudviewer/?autoload=<code>&lt;BOOLEAN&gt;</code>&url=<code>&lt;PLY_FILE_URL&gt;</code></p>
   <p>For example, if your *.ply file is located at <code>https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply</code> , then your link to share is:
-  <a href="http://kmatzen.github.io/cloudviewer/?url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply" target="_new">http://kmatzen.github.io/cloudviewer/?url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply</a></p>
+  <a href="http://kmatzen.github.io/cloudviewer/?autoload=true&url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply" target="_new">http://kmatzen.github.io/cloudviewer/?autoload=true&url=https://dl.dropbox.com/s/5joklv61yl657y6/hand.bin.ply</a></p>
   <p>You can also input your *.ply URL below and I'll generate the link to share and the embed code for you.</p>
   <div class="row">
     <div class="col-sm-12">
@@ -63,7 +63,7 @@
       <div class="form-group">
         <div class="checkbox">
           <label>
-            <input id="autoload_cbx" type="checkbox"> Load on start
+            <input id="autoload_cbx" type="checkbox" checked> Load on start
           </label>
         </div>
         <div class="checkbox">
@@ -134,10 +134,10 @@ $(function() {
     }
     $('#ply_url').parent().removeClass('has-error');
 
-    $('#sharing_link').val(site + '?url=' + url);
     var size = sizing[$('#size_options').val()];
-    var autoload = $('#autoload_cbx').attr('checked') == 'checked';
-    var allowfullscreen = $('#allowfullscreen_cbx').attr('checked') == 'checked' ? ' allowfullscreen' : '';
+    var autoload = $('#autoload_cbx').is(':checked');
+    var allowfullscreen = $('#allowfullscreen_cbx').is(':checked') ? ' allowfullscreen' : '';
+    $('#sharing_link').val(site + '?autoload='+ autoload + '&url=' + url);
 
     var content = '<iframe width="' + size[0] + '" height="' + size[1] + '" src="' + site + '?url=' + url + '&autoload=' + autoload + '" frameborder="0"' + allowfullscreen + '></iframe>';
     $('#embed_result').val(content);
