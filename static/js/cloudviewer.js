@@ -1,8 +1,10 @@
 var Parameters = function() {
+  this.cameraZ = 10.0;
+  this.rotation = GL.Matrix.identity();
+  this.center = new GL.Vector(0, 0, 0);
   this.near = 0.001;
   this.far = 2500.0;
-  this.pointSize = 0.01;
-  this.fogDensity = 0.001;
+  this.pointSize = 1.0;
   this.roundPoints = false;
 };
 
@@ -12,11 +14,6 @@ var getUrlParams = function(key) {
 
 var CloudViewer = function() {
   this.canvas = $('#canvas')[0];
-  this.camera = null;
-  this.controls = null;
-  this.scene = null;
-  this.renderer = null;
-  this.particleSystem = null;
 
   this.gl = null;
   this.guiPointSize = null;
@@ -31,8 +28,8 @@ var CloudViewer = function() {
 
   this.isMobile = (typeof window.orientation !== 'undefined');
   this.fullscreen = false;
-  console.log(this.isMobile);
 
+  this.particleSystem = null;
   this.particlePositions = null;
 };
 
@@ -41,39 +38,29 @@ CloudViewer.prototype.setupGL = function() {
 
   // NOTE: need antialias:false so that readPixels works as expected.
   // need alpha:true to allow alpha channel working.
-  this.renderer = new THREE.WebGLRenderer({
+  this.gl = GL.create({
     antialias: false,
     alpha: true,
     preserveDrawingBuffer: true,
     canvas: $('#canvas')[0]
   });
-  this.renderer.setClearColor(0x000000, 0);
-  this.renderer.setSize(window.innerWidth, window.innerHeight);
+  var gl = this.gl;
 
-  this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, params.near, params.far);
-  this.camera.position.z = 10;
-
-  this.controls = new THREE.TrackballControls(this.camera, this.canvas);
-  this.controls.rotateSpeed = 1.0;
-  this.controls.zoomSpeed = 1.2;
-  this.controls.panSpeed = 0.8;
-  this.controls.noZoom = false;
-  this.controls.noPan = false;
-  this.controls.staticMoving = true;
-  this.controls.dynamicDampingFactor = 0.3;
-  this.controls.keys = [0, 0, 0];
-  this.controls.addEventListener('change', this.render);
-
-  this.scene = new THREE.Scene();
-  this.scene.fog = new THREE.FogExp2(0x333333, params.fogDensity);
-
-  this.material = new THREE.ParticleSystemMaterial({ size: params.pointSize, vertexColors: true});
-
+  this.setupShaders();
   this.setupEventListeners();
+
+  gl.fullscreen({providedCanvas: true, near: params.near, far: params.far, fov: 45});
+  gl.animate();
+  //gl.enable(gl.CULL_FACE);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
+  this.glInvalidate = true;
 };
 
 CloudViewer.prototype.setupEventListeners = function() {
   var cv = this;
+  var gl = this.gl;
   var params = this.params;
   this.canvas.addEventListener('dblclick', function(e) {
     if (cv.isMobile) {
@@ -86,20 +73,16 @@ CloudViewer.prototype.setupEventListeners = function() {
     cv.renderIdMap();
     var pointId = cv.sampleIdMap(x, y, this.width, this.height);
     cv.glInvalidate = true;
+    gl.ondraw();
 
-    cv.material.showidx = 0;
     if (pointId == 0) {
       return;
     }
 
     var pos = cv.particlePositions.subarray(pointId*3, pointId*3+3);
-    var newTarget = new THREE.Vector3(pos[0], pos[1], pos[2]);
-    var v = new THREE.Vector3();
-    v.subVectors(newTarget, cv.controls.target);
-
-    cv.camera.position.addVectors(cv.camera.position, v);
-    cv.controls.target = newTarget;
+    params.center = new GL.Vector(pos[0], pos[1], pos[2]);
     cv.glInvalidate = true;
+    gl.ondraw();
   });
 
   var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
@@ -111,44 +94,92 @@ CloudViewer.prototype.setupEventListeners = function() {
       } else if (wheelDelta < 0) {
         params.pointSize /= 2.0;
       }
-      params.pointSize = Math.min(0.05, Math.max(0.0001, params.pointSize));
-      cv.material.size = params.pointSize;
+      params.pointSize = Math.min(512.0, Math.max(1.0, params.pointSize));
       if (cv.guiPointSize) {
         cv.guiPointSize.updateDisplay();
       }
+    } else {
+      if (wheelDelta > 0) {
+        params.cameraZ /= 1.1;
+      } else if (wheelDelta < 0) {
+        params.cameraZ *= 1.1;
+      }
+      params.cameraZ = Math.min(10240.0, Math.max(0.1, params.cameraZ));
     }
     cv.glInvalidate = true;
     e.preventDefault();
   });
 
-  this.canvas.addEventListener('mouseup', function(e) {
+  gl.onmouseup = function(e) {
     $('#canvas').css('cursor', 'auto');
-  });
+  };
 
-  this.canvas.addEventListener('mousedown', function(e) {
-    var self = this;
-    document.onmousemove = function(e) {
-      if (e.ctrlKey || (!e.altKey && e.which == 3)) {
-        // pan mode
-        $('#canvas').css('cursor', 'move');
-      } else if (e.altKey || e.which == 2) {
-        // zoom mode
+  gl.onmousemove = function(e) {
+    if (!e.dragging) {
+      return;
+    }
+    if (e.ctrlKey || (!e.altKey && e.which == 3)) {
+      // pan mode
+      $('#canvas').css('cursor', 'move');
+      cv.panWorldXY(e.x, e.y, e.deltaX, e.deltaY);
+    } else if (e.altKey || e.which == 2) {
+      // zoom mode
+      if (e.deltaY < 0) {
         $('#canvas').css('cursor', '-webkit-zoom-in');
       } else {
-        // sphere mode
-        $('#canvas').css('cursor', '-webkit-grabbing');
+        $('#canvas').css('cursor', '-webkit-zoom-out');
       }
-      cv.glInvalidate = true;
-    };
-
-    this.onmouseup = function() {
-      document.onmousemove = null;
-    };
-  });
-
-  this.canvas.addEventListener('touchmove', function(e) {
+      params.cameraZ += 150.0 * e.deltaY / gl.canvas.height;
+      params.cameraZ = Math.min(10240.0, Math.max(0.1, params.cameraZ));
+    } else {
+      // sphere mode
+      $('#canvas').css('cursor', '-webkit-grabbing');
+      cv.rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
+    }
     cv.glInvalidate = true;
-  });
+  };
+
+  gl.ontouchmove = function(e) {
+    switch(e.touches.length) {
+      case 1:
+        // sphere
+        cv.rotateWorldWithSphere(e.x, e.y, e.deltaX, e.deltaY);
+        break;
+      case 2:
+        // zoom
+				var dx = e.touches[ 0 ].pageX - e.touches[ 1 ].pageX;
+				var dy = e.touches[ 0 ].pageY - e.touches[ 1 ].pageY;
+				var delta = Math.sqrt( dx * dx + dy * dy );
+        params.cameraZ += 150.0 * delta / gl.canvas.height;
+        params.cameraZ = Math.min(10240.0, Math.max(0.1, params.cameraZ));
+        break;
+      case 3:
+        // pan
+        cv.panWorldXY(e.x, e.y, e.deltaX, e.deltaY);
+        break;
+      default:
+        break;
+    }
+    cv.glInvalidate = true;
+  };
+
+  gl.ondraw = function() {
+    // be sure to set glInvalidate to true to redraw
+    if (!cv.glInvalidate) {
+      return;
+    }
+
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.loadIdentity();
+    gl.matrixMode(gl.MODELVIEW);
+    gl.translate(0, 0, -params.cameraZ);
+    gl.multMatrix(params.rotation);
+    gl.translate(-params.center.x, -params.center.y, -params.center.z);
+    cv.renderScene(cv.shaders.particle);
+
+    cv.glInvalidate = false;
+  }
 };
 
 CloudViewer.prototype.render = function() {
@@ -223,7 +254,7 @@ CloudViewer.prototype.setupUI = function() {
         this.downloadPly(this.onloadUrl);
       }
 
-      $('#zoom_btn').css('top', '150px');
+      $('#zoom_btn').css('top', '120px');
       $('#zoom_btn').css('right', '15px');
 
       $('#dropzone').show();
@@ -240,10 +271,12 @@ CloudViewer.prototype.setupZoomButton = function() {
   var zoomInterval = null;
   $('#zoom_btn').show();
   $('#mini_btn_zoomin').on('mousedown', function(e) {
-    cv.controls.zoomDelta(0.1);
+    cv.params.cameraZ /= 1.1;
+    cv.params.cameraZ = Math.min(10240.0, Math.max(0.1, cv.params.cameraZ));
     cv.glInvalidate = true;
     zoomInterval = setInterval(function() {
-      cv.controls.zoomDelta(0.1);
+      cv.params.cameraZ /= 1.1;
+      cv.params.cameraZ = Math.min(10240.0, Math.max(0.1, cv.params.cameraZ));
       cv.glInvalidate = true;
     }, 50);
   });
@@ -252,10 +285,12 @@ CloudViewer.prototype.setupZoomButton = function() {
     cv.glInvalidate = true;
   });
   $('#mini_btn_zoomout').on('mousedown', function(e) {
-    cv.controls.zoomDelta(-0.1);
+    cv.params.cameraZ *= 1.1;
+    cv.params.cameraZ = Math.min(10240.0, Math.max(0.1, cv.params.cameraZ));
     cv.glInvalidate = true;
     zoomInterval = setInterval(function() {
-      cv.controls.zoomDelta(-0.1);
+      cv.params.cameraZ *= 1.1;
+      cv.params.cameraZ = Math.min(10240.0, Math.max(0.1, cv.params.cameraZ));
       cv.glInvalidate = true;
     }, 50);
   });
@@ -508,47 +543,133 @@ CloudViewer.prototype.setupDatGui = function() {
     cv.camera.updateProjectionMatrix();
     cv.glInvalidate = true;
   });
-  cv.guiPointSize = gui.add(params, 'pointSize', 0.0001, 0.05)
+  cv.guiPointSize = gui.add(params, 'pointSize', 1.0, 512.0)
     .name('point size')
     .onChange(function(val) {
-      cv.material.size = val;
-      cv.glInvalidate = true;
-    });
-  gui.add(params, 'fogDensity', 0.00025, 0.003)
-    .name('fog density')
-    .onChange(function(val) {
-      cv.scene.fog.density = val;
       cv.glInvalidate = true;
     });
 };
 
 CloudViewer.prototype.renderIdMap = function() {
-  var gl = this.renderer.getContext();
+  var gl = this.gl;
   gl.clearColor(0, 0, 0, 0);
   gl.colorMask(true, true, true, true);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  this.material.showidx = 1.0;
-  this.renderer.render(this.scene, this.camera);
+  this.renderScene(this.shaders.pointId);
 };
 
 CloudViewer.prototype.sampleIdMap = function(x, y, width, height) {
-  var gl = this.renderer.getContext();
+  var gl = this.gl;
   var pixels = new Uint8Array(4);
   gl.readPixels(x,height-y,1,1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   var pointId = pixels[0]*16777216 + pixels[1]*65536 + pixels[2]*256 + pixels[3];
   return pointId;
 };
 
-CloudViewer.prototype.fitAll = function(medoid, distToCenter) {
-  var fromTargetToMedoid = new THREE.Vector3();
-  fromTargetToMedoid.subVectors(medoid, this.controls.target);
-  this.camera.position.addVectors(this.camera.position, fromTargetToMedoid);
-  this.controls.target = medoid;
+CloudViewer.prototype.renderScene = function(shader) {
+  if (!this.particleSystem) {
+    return;
+  }
 
-  var zoomDist = new THREE.Vector3();
-  zoomDist.subVectors(this.camera.position, this.controls.target);
-  zoomDist.setLength(distToCenter);
-  this.camera.position.addVectors(zoomDist, this.controls.target);
+  var params = this.params;
+  var uniforms = {
+    size: params.pointSize,
+    near: params.near,
+    far: params.far
+  };
+  shader.uniforms(uniforms).draw(this.particleSystem, this.gl.POINTS);
+};
+
+  // Code from MeshLab source at 
+  // https://github.com/kylemcdonald/ofxVCGLib/blob/master/vcglib/wrap/gui/trackutils.h
+CloudViewer.prototype.hitSphere = function(x, y) {
+  var params = this.params;
+  var radius = params.cameraZ / 10 * 2.5;
+  var center = params.center;
+  var tracer = new GL.Raytracer();
+  var ray = tracer.getRayForPixel(x, y);
+  
+  var viewplane = utils.getViewPlane(params.center);
+  var viewpoint = tracer.eye;
+  var hitplane = utils.intersectionLinePlane(viewplane, ray, viewpoint);
+  
+  var resSp = GL.Raytracer.hitTestSphere(viewpoint, ray, params.center, radius);
+  var resHp = utils.hitHyper(center, radius, viewpoint, viewplane.normal, hitplane);
+
+  // four cases
+  // 1) Degenerate line tangent to both sphere and hyperboloid!
+  if (!resSp && !resHp) {
+    // most likely will never get hit
+    return null;
+  } 
+
+  // 2) line cross only the sphere
+  if (resSp && !resHp) {
+    return resSp.hit;
+  }
+
+  // 3) line cross only the hyperboloid
+  if (!resSp && resHp) {
+    return resHp;
+  }
+  
+  // 4) line cross both sphere and hyperboloid: choose according angle.
+  var vpVec = viewpoint.subtract(center).unit();
+  var resSpVec = resSp.hit.subtract(center).unit();
+  var angleDeg = Math.acos(vpVec.dot(resSpVec))*180.0/Math.PI;
+  
+  if (angleDeg < 45) {
+    return resSp.hit;
+  } else {
+    return resHp;
+  }
+};
+
+CloudViewer.prototype.rotateWorldWithSphere = function(x, y, dx, dy) {
+  var hitNew = this.hitSphere(x, y);
+  if (!hitNew)
+    return;
+  var hitOld = this.hitSphere(x-dx, y-dy);
+  if (!hitOld)
+    return;
+
+  var params = this.params;
+  var hitNewVec = hitNew.subtract(params.center).unit();
+  var hitOldVec = hitOld.subtract(params.center).unit();
+  var axis = hitNewVec.cross(hitOldVec).toArray();
+  var angle = Math.acos(hitNewVec.dot(hitOldVec))*180.0/Math.PI;
+
+  var m = GL.Matrix.rotate(-angle, axis[0], axis[1], axis[2]); 
+  params.rotation = params.rotation.multiply(m);
+};
+
+CloudViewer.prototype.panWorldXY = function(x, y, dx, dy) {
+  var tracer = new GL.Raytracer();
+  var viewplane = utils.getViewPlane(this.params.center);
+  var viewpoint = tracer.eye;
+
+  var oldRay = tracer.getRayForPixel(x-dx, y-dy);
+  var oldHitplane = utils.intersectionLinePlane(viewplane, oldRay, viewpoint);
+  var newRay = tracer.getRayForPixel(x, y);
+  var newHitplane = utils.intersectionLinePlane(viewplane, newRay, viewpoint);
+
+  var diff = oldHitplane.subtract(newHitplane);
+  this.params.center = this.params.center.add(diff);
+};
+
+CloudViewer.prototype.createBuffer = function(array, spacing) {
+  var gl = this.gl;
+  var buffer = gl.createBuffer();
+  buffer.length = array.length;
+  buffer.spacing = spacing;
+  gl.bindBuffer (gl.ARRAY_BUFFER, buffer);
+  gl.bufferData (gl.ARRAY_BUFFER, array, gl.STATIC_DRAW); 
+  return buffer;
+};
+
+CloudViewer.prototype.fitAll = function(medoid, distToCenter) {
+  this.params.center = medoid;
+  this.params.cameraZ = distToCenter;
 
   this.glInvalidate = true;
 };
@@ -607,7 +728,7 @@ CloudViewer.prototype.findMedoidAndDist = function(idx, pos) {
   }
 
   var medoidIdx = samples[medoidI];
-  var medoid = new THREE.Vector3(pos[medoidIdx*3], pos[medoidIdx*3+1], pos[medoidIdx*3+2]);
+  var medoid = new GL.Vector(pos[medoidIdx*3], pos[medoidIdx*3+1], pos[medoidIdx*3+2]);
 
   // find the top 90%
   function compareDist(a, b) {
@@ -616,7 +737,7 @@ CloudViewer.prototype.findMedoidAndDist = function(idx, pos) {
   var sortedDistJ = minDistJ.sort(compareDist);
 
   var rank = Math.round(0.9 * numSamples + 0.5);
-  var distToCenter = Math.sqrt(sortedDistJ[rank].dist) / Math.sin( Math.PI / 180.0 * this.camera.fov * 0.5 );
+  var distToCenter = Math.sqrt(sortedDistJ[rank].dist) / Math.sin( Math.PI / 180.0 * 45 * 0.5 ); // fov of 45
 
   return {medoid: medoid, dist: distToCenter};
 };
