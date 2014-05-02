@@ -248,7 +248,7 @@ function addEventListeners() {
       }
     }
     e.original = original;
-    if (isTouch) {
+    if (e.touches && e.touches.length) {
       e.x = e.touches[0].pageX;
       e.y = e.touches[0].pageY;
     } else {
