@@ -182,12 +182,6 @@ CloudViewer.prototype.setupEventListeners = function() {
   }
 };
 
-CloudViewer.prototype.render = function() {
-  var cv = cloudViewer;
-  cv.renderer.render(cv.scene, cv.camera);
-  //cv.stats.update();
-};
-
 CloudViewer.prototype.setupShaders = function() {
   // Define all shaders
   this.shaders = {
@@ -359,6 +353,7 @@ CloudViewer.prototype.setupFullscreenHandlers = function() {
       $('#mini_btn_compress').hide();
       $('#mini_btn_expand').show();
     }
+    cv.glInvalidate = true;
   };
   document.addEventListener('fullscreenchange', fullscreenHandler);
   document.addEventListener('mozfullscreenchange', fullscreenHandler);

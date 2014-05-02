@@ -6,7 +6,7 @@ var cloudViewer = null;
 
 $(function() {
   $(window).resize(function() {
-    cloudViewer.render();
+    cloudViewer.glInvalidate = true;
   });
 
   cloudViewer = new CloudViewer();
