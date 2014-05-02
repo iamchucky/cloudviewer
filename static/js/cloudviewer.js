@@ -21,7 +21,6 @@ var CloudViewer = function() {
   this.gl = null;
   this.guiPointSize = null;
   this.glInvalidate = true;
-  this.enable_glInvalidate = true;
   this.params = new Parameters();
   this.trackball = null;
   this.stats = null;
@@ -86,7 +85,7 @@ CloudViewer.prototype.setupEventListeners = function() {
     var y = e.clientY ? e.clientY : e.y;
     cv.renderIdMap();
     var pointId = cv.sampleIdMap(x, y, this.width, this.height);
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
 
     cv.material.showidx = 0;
     if (pointId == 0) {
@@ -100,7 +99,7 @@ CloudViewer.prototype.setupEventListeners = function() {
 
     cv.camera.position.addVectors(cv.camera.position, v);
     cv.controls.target = newTarget;
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
   });
 
   var mousewheelevt=(/Firefox/i.test(navigator.userAgent))? 'DOMMouseScroll' : 'mousewheel';
@@ -118,7 +117,7 @@ CloudViewer.prototype.setupEventListeners = function() {
         cv.guiPointSize.updateDisplay();
       }
     }
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
     e.preventDefault();
   });
 
@@ -139,7 +138,7 @@ CloudViewer.prototype.setupEventListeners = function() {
         // sphere mode
         $('#canvas').css('cursor', '-webkit-grabbing');
       }
-      requestAnimationFrame(animate);
+      cv.glInvalidate = true;
     };
 
     this.onmouseup = function() {
@@ -148,7 +147,7 @@ CloudViewer.prototype.setupEventListeners = function() {
   });
 
   this.canvas.addEventListener('touchmove', function(e) {
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
   });
 };
 
@@ -242,27 +241,27 @@ CloudViewer.prototype.setupZoomButton = function() {
   $('#zoom_btn').show();
   $('#mini_btn_zoomin').on('mousedown', function(e) {
     cv.controls.zoomDelta(0.1);
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
     zoomInterval = setInterval(function() {
       cv.controls.zoomDelta(0.1);
-      requestAnimationFrame(animate);
+      cv.glInvalidate = true;
     }, 50);
   });
   $('#mini_btn_zoomin').on('mouseup', function(e) {
     window.clearInterval(zoomInterval);
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
   });
   $('#mini_btn_zoomout').on('mousedown', function(e) {
     cv.controls.zoomDelta(-0.1);
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
     zoomInterval = setInterval(function() {
       cv.controls.zoomDelta(-0.1);
-      requestAnimationFrame(animate);
+      cv.glInvalidate = true;
     }, 50);
   });
   $('#mini_btn_zoomout').on('mouseup', function(e) {
     window.clearInterval(zoomInterval);
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
   });
 }
 
@@ -502,24 +501,24 @@ CloudViewer.prototype.setupDatGui = function() {
   gui.add(params, 'near', 0.001, 1.0).onChange(function() {
     cv.camera.near = params.near;
     cv.camera.updateProjectionMatrix();
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
   });
   gui.add(params, 'far', 1.0, 2500.0).onChange(function() {
     cv.camera.far = params.far;
     cv.camera.updateProjectionMatrix();
-    requestAnimationFrame(animate);
+    cv.glInvalidate = true;
   });
   cv.guiPointSize = gui.add(params, 'pointSize', 0.0001, 0.05)
     .name('point size')
     .onChange(function(val) {
       cv.material.size = val;
-      requestAnimationFrame(animate);
+      cv.glInvalidate = true;
     });
   gui.add(params, 'fogDensity', 0.00025, 0.003)
     .name('fog density')
     .onChange(function(val) {
       cv.scene.fog.density = val;
-      requestAnimationFrame(animate);
+      cv.glInvalidate = true;
     });
 };
 
@@ -551,7 +550,7 @@ CloudViewer.prototype.fitAll = function(medoid, distToCenter) {
   zoomDist.setLength(distToCenter);
   this.camera.position.addVectors(zoomDist, this.controls.target);
 
-  requestAnimationFrame(animate);
+  this.glInvalidate = true;
 };
 
 CloudViewer.prototype.findMedoidAndDist = function(idx, pos) {

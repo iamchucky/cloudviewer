@@ -24,7 +24,12 @@ $(function() {
 });
 
 function animate() {
-  cloudViewer.controls.update();
-  cloudViewer.render();
+  requestAnimationFrame(animate);
+  
+  if (cloudViewer.glInvalidate) {
+    cloudViewer.controls.update();
+    cloudViewer.render();
+    cloudViewer.glInvalidate = false;
+  }
 }
 
