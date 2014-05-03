@@ -220,9 +220,8 @@ function addImmediateMode() {
 // augmented event object. The event object also has the properties `x`, `y`,
 // `deltaX`, `deltaY`, and `dragging`.
 function addEventListeners() {
-  var context = gl, oldX = 0, oldY = 0, buttons = {}, hasOld = false;
+  var context = gl, oldX = 0, oldY = 0, oldZoom = 0, buttons = {}, hasOld = false;
   var has = Object.prototype.hasOwnProperty;
-  var isTouch = false;
   function isDragging() {
     for (var b in buttons) {
       if (has.call(buttons, b) && buttons[b]) return true;
@@ -251,6 +250,11 @@ function addEventListeners() {
     if (e.touches && e.touches.length) {
       e.x = e.touches[0].pageX;
       e.y = e.touches[0].pageY;
+      if (e.touches.length == 2) {
+        var dx = e.touches[0].pageX - e.touches[1].pageX;
+        var dy = e.touches[0].pageY - e.touches[1].pageY;
+        e.zoom = Math.sqrt(dx*dx + dy*dy); 
+      }
     } else {
       e.x = e.pageX;
       e.y = e.pageY;
@@ -262,13 +266,16 @@ function addEventListeners() {
     if (hasOld) {
       e.deltaX = e.x - oldX;
       e.deltaY = e.y - oldY;
+      e.deltaZoom = e.zoom - oldZoom;
     } else {
       e.deltaX = 0;
       e.deltaY = 0;
+      e.deltaZoom = 0;
       hasOld = true;
     }
     oldX = e.x;
     oldY = e.y;
+    oldZoom = e.zoom;
     e.dragging = isDragging();
     e.preventDefault = function() {
       e.original.preventDefault();
@@ -279,7 +286,6 @@ function addEventListeners() {
     return e;
   }
   function mousedown(e) {
-    isTouch = false;
     gl = context;
     if (!isDragging()) {
       // Expand the event handlers to the document to handle dragging off canvas.
@@ -294,14 +300,12 @@ function addEventListeners() {
     e.preventDefault();
   }
   function mousemove(e) {
-    isTouch = false;
     gl = context;
     e = augment(e);
     if (gl.onmousemove) gl.onmousemove(e);
     e.preventDefault();
   }
   function mouseup(e) {
-    isTouch = false;
     gl = context;
     buttons[e.which] = false;
     if (!isDragging()) {
@@ -316,21 +320,18 @@ function addEventListeners() {
     e.preventDefault();
   }
   function touchstart(e) {
-    isTouch = true;
     gl = context;
     e = augment(e);
     if (gl.ontouchstart) gl.ontouchstart(e);
     e.preventDefault();
   }
   function touchmove(e) {
-    isTouch = true;
     gl = context;
     e = augment(e);
     if (gl.ontouchmove) gl.ontouchmove(e);
     e.preventDefault();
   }
   function touchend(e) {
-    isTouch = true;
     gl = context;
     e = augment(e);
     if (gl.ontouchend) gl.ontouchend(e);

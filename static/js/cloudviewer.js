@@ -147,10 +147,7 @@ CloudViewer.prototype.setupEventListeners = function() {
         break;
       case 2:
         // zoom
-				var dx = e.touches[ 0 ].pageX - e.touches[ 1 ].pageX;
-				var dy = e.touches[ 0 ].pageY - e.touches[ 1 ].pageY;
-				var delta = Math.sqrt( dx * dx + dy * dy );
-        params.cameraZ += 150.0 * delta / gl.canvas.height;
+        params.cameraZ += e.deltaZoom / gl.canvas.height;
         params.cameraZ = Math.min(10240.0, Math.max(0.1, params.cameraZ));
         break;
       case 3:
