@@ -14,10 +14,16 @@ self.addEventListener('message', function(e) {
   var posArray = new Float32Array(v.count * 3);
   var colorArray = new Float32Array(v.count * 3);
   var idxArray = new Float32Array(v.count);
+  var timeArray = new Float32Array(v.count * 2);
 
   // set color to white initially
   for (var i = 0; i < vcount*3; ++i) {
     colorArray[i] = 1.0;
+  }
+
+  // set the time to uninitialized
+  for (var i = 0; i < vcount*2; ++i) {
+    timeArray[i] = NaN;
   }
 
   try {
@@ -46,6 +52,7 @@ self.addEventListener('message', function(e) {
         if (prop != 'x' && prop != 'y' && prop != 'z' &&
             prop != 'red' && prop != 'green' && prop != 'blue' &&
             prop != 'diffuse_red' && prop != 'diffuse_green' && prop != 'diffuse_blue' &&
+            prop != 'tmin' && prop != 'tmax' &&
             fileformat == 'ascii') {
           continue;
         }
@@ -74,6 +81,10 @@ self.addEventListener('message', function(e) {
           colorArray[j * 3 + 1] = val / (vprops[i].type == 'uchar' ? 256.0 : 1.0);
         } else if (prop == 'blue' || prop == 'diffuse_blue') {
           colorArray[j * 3 + 2] = val / (vprops[i].type == 'uchar' ? 256.0 : 1.0);
+        } else if (prop == 'tmin') {
+          timeArray[j * 2] = val;
+        } else if (prop == 'tmax') {
+          timeArray[j * 2 + 1] = val;
         }
       }
       // set idx array
@@ -90,13 +101,15 @@ self.addEventListener('message', function(e) {
     self.postMessage({status: 'error', message: 'Error when parsing ply body, corrupted file?\n\n' + err});
     colorArray = null;
     idxArray = null;
+    timeArray = null;
     return;
   }
 
   // done, post result
-  self.postMessage({status: 'done', pos: posArray, color: colorArray, idx: idxArray});
+  self.postMessage({status: 'done', pos: posArray, color: colorArray, idx: idxArray, time: timeArray});
   colorArray = null;
   idxArray = null;
+  timeArray = null;
 
 }, false);
 
