@@ -104,11 +104,14 @@ PlyLoader.prototype.parseBody = function() {
       var posBuffer = cv.createBuffer(data.pos, 3);
       var colorBuffer = cv.createBuffer(data.color, 3);
       var idxBuffer = cv.createBuffer(data.idx, 1);
+      var timeBuffer = cv.createBuffer(data.time, 2);
       var ps = new GL.Mesh({triangles: false, colors: true});
       ps.vertexBuffers['gl_Vertex'].buffer = posBuffer;
       ps.vertexBuffers['gl_Color'].buffer = colorBuffer;
       ps.addVertexBuffer('idxs', 'idx');
       ps.vertexBuffers['idx'].buffer = idxBuffer;
+      ps.addVertexBuffer('times', 'time')
+      ps.vertexBuffers['time'].buffer = timeBuffer;
       cv.particleSystem = ps;
 
       // compute medoid and zoom out.
