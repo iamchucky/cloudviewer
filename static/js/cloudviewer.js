@@ -3,6 +3,7 @@ var Parameters = function() {
   this.rotation = GL.Matrix.identity();
   this.center = new GL.Vector(0, 0, 0);
   this.currentTime = 1367737200.0;
+  this.filterTime = false;
   this.near = 0.001;
   this.far = 2500.0;
   this.pointSize = 1.0;
@@ -18,7 +19,6 @@ var CloudViewer = function() {
 
   this.gl = null;
   this.guiPointSize = null;
-  this.guiCurrentTime = null;
   this.glInvalidate = true;
   this.params = new Parameters();
   this.trackball = null;
@@ -542,6 +542,11 @@ CloudViewer.prototype.setupDatGui = function() {
     .onChange(function() {
       cv.glInvalidate = true;
     });
+  gui.add(params, 'filterTime', false)
+    .name('filter time')
+    .onChange(function() {
+      cv.glInvalidate = true;
+    });
   cv.guiPointSize = gui.add(params, 'pointSize', 1.0, 512.0)
     .name('point size')
     .onChange(function(val) {
@@ -575,7 +580,8 @@ CloudViewer.prototype.renderScene = function(shader) {
     size: params.pointSize,
     near: params.near,
     far: params.far,
-    currentTime: params.currentTime
+    currentTime: params.currentTime,
+    filterTime: params.filterTime,
   };
   shader.uniforms(uniforms).draw(this.particleSystem, this.gl.POINTS);
 };

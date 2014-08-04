@@ -2,6 +2,7 @@ var glsl = {
 
   particle: { 
     vertex: '\
+      uniform float filterTime;\
       uniform float far;\
       uniform float near;\
       uniform float size;\
@@ -10,13 +11,15 @@ var glsl = {
       varying vec4 color;\
       varying float rounded_points;\
       attribute vec2 time;\
+      attribute vec2 filteredTime;\
       void main() {\
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
         gl_PointSize = min(8.0, size / -cameraSpace.z);\
         color = gl_Color;\
         rounded_points = round;\
-        if ((!(0.0 <= time.x) && !(0.0 <= time.y)) || (currentTime < time.x || currentTime > time.y)) {\
+        vec2 selected_time = filterTime > 0.5 ? filteredTime : time;\
+        if ((!(0.0 <= selected_time.x) && !(0.0 <= selected_time.y)) || (currentTime < selected_time.x || currentTime > selected_time.y)) {\
           gl_Position = vec4(99999, 99999, 99999, 1);\
         }\
       }'

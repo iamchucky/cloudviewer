@@ -15,6 +15,7 @@ self.addEventListener('message', function(e) {
   var colorArray = new Float32Array(v.count * 3);
   var idxArray = new Float32Array(v.count);
   var timeArray = new Float32Array(v.count * 2);
+  var filteredTimeArray = new Float32Array(v.count * 2);
 
   // set color to white initially
   for (var i = 0; i < vcount*3; ++i) {
@@ -24,6 +25,7 @@ self.addEventListener('message', function(e) {
   // set the time to uninitialized
   for (var i = 0; i < vcount*2; ++i) {
     timeArray[i] = NaN;
+    filteredTimeArray[i] = NaN;
   }
 
   try {
@@ -53,6 +55,7 @@ self.addEventListener('message', function(e) {
             prop != 'red' && prop != 'green' && prop != 'blue' &&
             prop != 'diffuse_red' && prop != 'diffuse_green' && prop != 'diffuse_blue' &&
             prop != 'tmin' && prop != 'tmax' &&
+            prop != 'tmin_filtered' && prop != 'tmax_filtered' &&
             fileformat == 'ascii') {
           continue;
         }
@@ -85,6 +88,10 @@ self.addEventListener('message', function(e) {
           timeArray[j * 2] = val;
         } else if (prop == 'tmax') {
           timeArray[j * 2 + 1] = val;
+        } else if (prop == 'tmin_filtered') {
+          filteredTimeArray[j * 2] = val;
+        } else if (prop == 'tmax_filtered') {
+          filteredTimeArray[j * 2 + 1] = val;
         }
       }
       // set idx array
@@ -102,14 +109,16 @@ self.addEventListener('message', function(e) {
     colorArray = null;
     idxArray = null;
     timeArray = null;
+    filteredTimeArray = null;
     return;
   }
 
   // done, post result
-  self.postMessage({status: 'done', pos: posArray, color: colorArray, idx: idxArray, time: timeArray});
+  self.postMessage({status: 'done', pos: posArray, color: colorArray, idx: idxArray, time: timeArray, filteredTime: filteredTimeArray});
   colorArray = null;
   idxArray = null;
   timeArray = null;
+  filteredTimeArray = null;
 
 }, false);
 
