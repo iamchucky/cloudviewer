@@ -2,9 +2,12 @@
 <head>
 	<title>CloudViewer</title>
 	<link rel="stylesheet" href="static/css/bootstrap.min.css">
+	<link rel="stylesheet" href="static/css/slider.css">
 	<link rel="stylesheet" href="static/css/cloudviewer.css">
 
-	<script src="static/js/jquery-1.11.0.min.js"></script>
+	<script src="static/js/jquery-2.1.1.min.js"></script>
+	<script src="static/js/bootstrap.min.js"></script>
+	<script src="static/js/bootstrap-slider.js"></script>
   <script src="static/js/dat.gui.min.js"></script>
   <script src="static/js/stats.min.js"></script>
   <script src="static/js/lightgl.js"></script>
@@ -46,7 +49,12 @@
       <i id="mini_btn_zoomout" class="glyphicon glyphicon-minus nonselect"></i>
     </div>
   </div>
-  <div id="bottom_container">
+  <div id="bottom_container" style="width:100%">
+    <div style="padding:50px">
+      <div id="current_time"></div>
+      <div id="time_bar" class="slider" style="width:1024px">
+      </div>
+    </div>
   </div>
   <div id="mini_ui" style="color:white">
     <div class="mini_btn nonselect" style="position:fixed; top:0px; left:0px;">

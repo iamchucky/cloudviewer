@@ -44,6 +44,7 @@ var glsl = {
     vertex: '\
       attribute vec2 t_range;\
       attribute float idx;\
+      uniform float baseIndex;\
       uniform float size;\
       uniform float round;\
       varying vec4 color;\
@@ -52,10 +53,11 @@ var glsl = {
         gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
         vec4 cameraSpace = gl_ModelViewMatrix * gl_Vertex;\
         gl_PointSize = min(8.0, size / -cameraSpace.z);\
-        float idx0 = floor(idx/16777216.0)/255.0;\
-        float idx1 = floor(mod(idx, 16777216.0)/65536.0)/255.0;\
-        float idx2 = floor(mod(idx, 65536.0)/256.0)/255.0;\
-        float idx3 = mod(idx, 256.0)/255.0;\
+        float newIndex = idx + baseIndex;\
+        float idx0 = floor(newIndex/16777216.0)/255.0;\
+        float idx1 = floor(mod(newIndex, 16777216.0)/65536.0)/255.0;\
+        float idx2 = floor(mod(newIndex, 65536.0)/256.0)/255.0;\
+        float idx3 = mod(newIndex, 256.0)/255.0;\
         color = vec4(idx0, idx1, idx2, idx3);\
         rounded_points = round;\
       }',

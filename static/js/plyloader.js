@@ -1,4 +1,4 @@
-var PlyLoader = function(content, onerror) {
+var PlyLoader = function(content, onsuccess, onerror) {
   this.headerContent = null;
   this.bodyContent = null;
   this.workerContent = null;
@@ -10,6 +10,7 @@ var PlyLoader = function(content, onerror) {
     fileformat: '',
     ply: false,
   };
+  this.onsuccess = onsuccess;
   this.onerror = onerror;
   this.parse(content);
 };
@@ -98,7 +99,7 @@ PlyLoader.prototype.parseBody = function() {
     } else if (data.status == 'done') {
 
       $('#loader_progress').hide();
-      cv.particlePositions = data.pos;
+      cv.particlePositions.push(data.pos);
 
       // construct VBO from array buffer
       var posBuffer = cv.createBuffer(data.pos, 3);
@@ -115,7 +116,7 @@ PlyLoader.prototype.parseBody = function() {
       ps.vertexBuffers['time'].buffer = timeBuffer;
       ps.addVertexBuffer('filteredTimes', 'filteredTime')
       ps.vertexBuffers['filteredTime'].buffer = filteredTimeBuffer;
-      cv.particleSystem = ps;
+      cv.particleSystem.push(ps);
 
       // compute medoid and zoom out.
       var ret = cv.findMedoidAndDist(data.idx, data.pos);
@@ -129,6 +130,7 @@ PlyLoader.prototype.parseBody = function() {
       this.headerContent = null;
       this.bodyContent = null;
 
+      loader.onsuccess();
     }
   }, false);
 

@@ -3,7 +3,7 @@ var Parameters = function() {
   this.rotation = GL.Matrix.identity();
   this.center = new GL.Vector(0, 0, 0);
   this.currentTime = 1367737200.0;
-  this.filterTime = false;
+  this.filterTime = true;
   this.near = 0.001;
   this.far = 2500.0;
   this.pointSize = 1.0;
@@ -16,9 +16,11 @@ var getUrlParams = function(key) {
 
 var CloudViewer = function() {
   this.canvas = $('#canvas')[0];
+  this.time_bar = $('#time_bar');
 
   this.gl = null;
   this.guiPointSize = null;
+  this.current_time = null;
   this.glInvalidate = true;
   this.params = new Parameters();
   this.trackball = null;
@@ -31,8 +33,8 @@ var CloudViewer = function() {
   this.isMobile = (typeof window.orientation !== 'undefined');
   this.fullscreen = false;
 
-  this.particleSystem = null;
-  this.particlePositions = null;
+  this.particleSystem = [];
+  this.particlePositions = [];
 };
 
 CloudViewer.prototype.setupGL = function() {
@@ -81,7 +83,16 @@ CloudViewer.prototype.setupEventListeners = function() {
       return;
     }
 
-    var pos = cv.particlePositions.subarray(pointId*3, pointId*3+3);
+    var positions = null;
+    for (var index = 0; index < cv.particlePositions.length; index++) {
+      if (pointId > cv.particlePositions[index].length) {
+        pointId -= cv.particlePositions[index].length;
+      } else {
+        positions = cv.particlePositions[index];
+        break;
+      }
+    }
+    var pos = positions.subarray(pointId*3, pointId*3+3);
     params.center = new GL.Vector(pos[0], pos[1], pos[2]);
     cv.glInvalidate = true;
     gl.ondraw();
@@ -231,6 +242,7 @@ CloudViewer.prototype.setupUI = function() {
 
       $('#title_block').show();
       this.setupDatGui();
+      this.setupTimeBar();
       this.setupPlyDragAndDrop();
       this.setupPlyLoadFromUrl();
 
@@ -390,6 +402,23 @@ CloudViewer.prototype.exitFullscreen = function() {
   }
 }
 
+CloudViewer.prototype.setupTimeBar = function() {
+  var cv = this;
+  var time_bar = cv.time_bar.slider({
+    'min': 1104566400,
+    'max': 1388563200,
+    'value': 1367737200,
+    'tooltip': 'show',
+    'formater': function(timestamp) {
+      var d = new Date(timestamp * 1000);
+      return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    },
+  });
+  time_bar.on('slide', function (ev) {
+    cv.current_time.setValue(ev.value);
+  });
+}
+
 CloudViewer.prototype.setupPlyDragAndDrop = function() {
   var cv = this;
   var setForegroundOpacity = function (val) {
@@ -423,10 +452,11 @@ CloudViewer.prototype.setupPlyDragAndDrop = function() {
     setForegroundOpacity('1');
 
     var files = e.dataTransfer.files;
+    var callback = null;
     for (var i = 0, f; f = files[i]; i++) {
-      cv.readPly(f);
-      break;
+      callback = (function (file, c) { return function() { cv.readPly(file, c); } })(f, callback);
     }
+    callback();
   }, false);
 };
 
@@ -483,7 +513,7 @@ CloudViewer.prototype.downloadPly = function(url, elem) {
   xhr.send();
 };
 
-CloudViewer.prototype.readPly = function(file) {
+CloudViewer.prototype.readPly = function(file, callback) {
   var cv = this;
   var reader = new FileReader();
   reader.onload = function(theFile) {
@@ -500,10 +530,16 @@ CloudViewer.prototype.readPly = function(file) {
       }
       console.log(name + ' loaded');
 
-      var loader = new PlyLoader(binary, function(str) {
-        $('#loader_progress').hide();
-        alert(str ? str : 'Invalid file format.');
-      });
+      var loader = new PlyLoader(binary,
+        function() {
+          if (callback) {
+            callback();
+          }
+        }, 
+        function(str) {
+          $('#loader_progress').hide();
+          alert(str ? str : 'Invalid file format.');
+        });
     };
   }(file);
   reader.onprogress = function(e) {
@@ -526,6 +562,7 @@ CloudViewer.prototype.setupDatGui = function() {
   var params = this.params;
   var gl = this.gl;
   var gui = new dat.GUI();
+  dat.GUI.toggleHide();
 
   gui.add(params, 'near', 0.001, 1.0).onChange(function() {
     cv.camera.near = params.near;
@@ -537,9 +574,10 @@ CloudViewer.prototype.setupDatGui = function() {
     cv.camera.updateProjectionMatrix();
     cv.glInvalidate = true;
   });
-  gui.add(params, 'currentTime', 946713600.0, 1388563200.0)
+  cv.current_time = gui.add(params, 'currentTime', 946713600.0, 1388563200.0)
     .name('current time')
     .onChange(function() {
+      cv.time_bar.slider('setValue', params.currentTime); 
       cv.glInvalidate = true;
     });
   gui.add(params, 'filterTime', false)
@@ -571,19 +609,20 @@ CloudViewer.prototype.sampleIdMap = function(x, y, width, height) {
 };
 
 CloudViewer.prototype.renderScene = function(shader) {
-  if (!this.particleSystem) {
-    return;
+  var baseIndex = 0;
+  for (var index = 0; index < this.particleSystem.length; index++) {
+    var params = this.params;
+    var uniforms = {
+      baseIndex: baseIndex,
+      size: params.pointSize,
+      near: params.near,
+      far: params.far,
+      currentTime: params.currentTime,
+      filterTime: params.filterTime,
+    };
+    shader.uniforms(uniforms).draw(this.particleSystem[index], this.gl.POINTS);
+    baseIndex += this.particlePositions[index].length;
   }
-
-  var params = this.params;
-  var uniforms = {
-    size: params.pointSize,
-    near: params.near,
-    far: params.far,
-    currentTime: params.currentTime,
-    filterTime: params.filterTime,
-  };
-  shader.uniforms(uniforms).draw(this.particleSystem, this.gl.POINTS);
 };
 
   // Code from MeshLab source at 
